@@ -1,0 +1,14 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: ichgram-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+       - mongo_data:/data/db     
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+volumes:
+   mongo_data:
