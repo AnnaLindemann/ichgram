@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { UserModel } from "./users.model.js";
 import mongoose from "mongoose";
 
@@ -8,7 +8,7 @@ type CreateUserBody = {
   passwordHash?: unknown;
 }
 
-export async function createUser(req: Request, res: Response): Promise<void> {
+export async function createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   const body = req.body as CreateUserBody;
 
   if(typeof body.email !== "string" || body.email.trim() === ""){
@@ -28,7 +28,7 @@ try{
 const created = await UserModel.create({
   email: body.email.trim().toLowerCase(),
   username: body.username.trim().toLowerCase(),
-  passwordHash: body.passwordHash.trim().toLowerCase(),
+  passwordHash: body.passwordHash,
 })
 res.status(201).json({
 ok: true,
@@ -40,12 +40,12 @@ user:{
 }
 })
 } catch(err:unknown){
-  // Duplicate key error (unique index)
+ 
   if(typeof err === "object" && err !== null && "code" in err && (err as {code?: unknown }).code === 11000) {
     res.status(409).json({ok: false, error: "email already exists"});
     return
   }
-     res.status(500).json({ok: false, error: "internal error"})
+     next(err)
   }
 }
 
@@ -80,7 +80,7 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
   });
 }
 
-export async function listUsers(req: Request, res: Response): Promise<void>{
+export async function listUsers(_req: Request, res: Response): Promise<void>{
 const users = await UserModel.find()
 .sort({createdAt:-1})
 .limit(20)

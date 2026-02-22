@@ -21,5 +21,16 @@ export function createApp(){
     return res.status(200).json({ok: true, db: true})
   });
   
+  app.use(
+    (
+      _err: unknown,
+      _req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction
+    ) => {
+      res.status(500).json({ ok: false, error: "internal error" });
+    }
+  );
+  
   return app;
   }
