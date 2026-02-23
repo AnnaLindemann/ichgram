@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, {type Model} from "mongoose";
 import type { User } from "./users.type.js";
 
 type UserSchemaShape = Omit<User, "createdAt"> & {
@@ -30,4 +30,6 @@ const userShema = new mongoose.Schema<UserSchemaShape>(
   }
 )
 
-export const UserModel = mongoose.model<UserSchemaShape>("User", userShema)
+export const UserModel: Model<UserSchemaShape> =
+  (mongoose.models.User as Model<UserSchemaShape>) ??
+  mongoose.model<UserSchemaShape>("User", userShema);
