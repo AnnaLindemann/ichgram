@@ -5,6 +5,7 @@ import { PostModel } from "./posts.model.js";
 import  { Types } from "mongoose";
 
 
+
 type CreatePostBody = {
   authorId: unknown;
  imageUrl: unknown;
@@ -75,3 +76,21 @@ export async function createPost(req: Request, res: Response): Promise<void> {
 }
    
   
+export async function listPosts(_req: Request, res:Response): Promise<void> {
+  const posts = await PostModel.find()
+  .sort({createdAt: -1})
+  .limit(20)
+  .exec()
+
+  res.status(200).json({
+    ok: true,
+    data: posts.map((p) => ({
+      id: p._id.toString(),
+      authorId: p.author.toString,
+      imageUrl: p.imageUrl,
+      caption: p.caption,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString()
+  }))
+})
+}
