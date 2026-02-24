@@ -86,7 +86,7 @@ export async function listPosts(_req: Request, res:Response): Promise<void> {
     ok: true,
     data: posts.map((p) => ({
       id: p._id.toString(),
-      authorId: p.author.toString,
+      authorId: p.author.toString(),
       imageUrl: p.imageUrl,
       caption: p.caption,
       createdAt: p.createdAt.toISOString(),
