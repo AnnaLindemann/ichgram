@@ -50,7 +50,7 @@ user:{
 }
 
 export async function getUserById(req: Request, res: Response): Promise<void> {
-  const id = req.params.id;
+  const {id} = req.params;
 
   if (typeof id !== "string" || id.trim() === "") {
     res.status(400).json({ ok: false, error: "id is required" });

@@ -2,7 +2,7 @@ import type { Response, Request } from "express";
 import type { CreatePostInput, PostDto } from "./posts.type.js";
 import { UserModel } from "../users/users.model.js";
 import { PostModel } from "./posts.model.js";
-import  { Types } from "mongoose";
+import  mongoose, { Types } from "mongoose";
 
 
 
@@ -74,8 +74,39 @@ export async function createPost(req: Request, res: Response): Promise<void> {
 })
 
 }
-   
-  
+
+export async function getPostById(req: Request, res: Response): Promise<void>{
+const {id} = req.params
+
+if(typeof id !== "string" || id.trim() === ""){
+  res.status(400).json({ok: false, error: "id is required"})
+  return
+}
+
+if(!mongoose.isValidObjectId(id)){
+  res.status(400).json({ok:false, error: "post is invalid"})
+  return
+}
+
+const post = await PostModel.findById(id).exec()
+
+if (!post){
+  res.status(404).json({ok: false, error: "post not found"})
+  return
+}
+const data: PostDto = {
+  id: post._id.toString(),
+  authorId: post.author.toString(),
+  caption: post.caption,
+  imageUrl: post.imageUrl,
+  createdAt: post.createdAt.toISOString(),
+  updatedAt: post.updatedAt.toISOString(),
+    }
+res.status(200).json({ok: true, data})
+
+}
+
+
 export async function listPosts(_req: Request, res:Response): Promise<void> {
   const posts = await PostModel.find()
   .sort({createdAt: -1})
