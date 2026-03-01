@@ -111,8 +111,22 @@ res.status(200).json({ok: true, data})
 }
 
 
-export async function listPosts(_req: Request, res:Response): Promise<void> {
-  const posts = await PostModel.find()
+export async function listPosts(req: Request, res:Response): Promise<void> {
+  const authorIdRaw: unknown = req.query.authorId
+  let filter : Record<string, unknown> = {}
+ if(authorIdRaw !== undefined){
+  if(typeof authorIdRaw !== "string"){
+    res.status(400).json({ok:false, error: "AuthorId has to be string"})
+    return
+  }
+
+  if(!mongoose.isValidObjectId(authorIdRaw)){
+       res.status(400).json({ ok: false, error: "AuthorId is invalid" });
+    return;
+  }
+  filter = {author: authorIdRaw}
+}
+ const posts = await PostModel.find(filter)
   .sort({createdAt: -1})
   .limit(20)
   .exec()
