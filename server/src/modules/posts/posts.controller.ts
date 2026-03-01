@@ -12,6 +12,10 @@ type CreatePostBody = {
  caption?: unknown;
 }
 
+type UpdatePostBody = {
+  caption?: unknown;
+}
+
 export async function createPost(req: Request, res: Response): Promise<void> {
   const body = req.body as CreatePostBody;
 
@@ -35,7 +39,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
   }
 
   if(body.caption !== undefined){
-   if(typeof body.caption !== "string" || body.caption.length >= 200){
+   if(typeof body.caption !== "string" || body.caption.length > 200){
     res.status(400).json({ok: false, error: "caption has to be string"})
     return
   }
@@ -124,4 +128,77 @@ export async function listPosts(_req: Request, res:Response): Promise<void> {
       updatedAt: p.updatedAt.toISOString()
   }))
 })
+}
+
+export async function updatePostCaption(req: Request, res: Response): Promise<void>{
+  const {id} = req.params
+ 
+  if(typeof id !== "string" || id.trim() === ""){
+    res.status(400).json({ok: false, error: "id is required"})
+    return
+  }
+  if(!mongoose.isValidObjectId(id)){
+    res.status(400).json({ok:false, error: "id is invalid"})
+  return  
+  }
+  if(req.body === null || typeof req.body !== "object" || Array.isArray(req.body)){
+      res.status(400).json({ok:false, error: "body has to be an object"})
+  return 
+  }
+  
+  const body = req.body as UpdatePostBody
+   
+  if(typeof body.caption !== "string"){
+      res.status(400).json({ok:false, error: "caption is required"})
+  return 
+  }
+  
+  const caption = body.caption.trim()
+  if(caption.length > 200){
+    res.status(400).json({ok:false, error: "has to be less as 200"})
+  return 
+  }
+
+  const post = await PostModel.findById(id).exec()
+
+if (!post){
+  res.status(404).json({ok: false, error: "post not found"})
+  return
+}
+post.caption = caption
+await post.save()
+
+const data: PostDto = {
+  id: post._id.toString(),
+  authorId: post.author.toString(),
+  caption: post.caption,
+  imageUrl: post.imageUrl,
+  createdAt: post.createdAt.toISOString(),
+  updatedAt: post.updatedAt.toISOString(),
+    }
+res.status(200).json({ok: true, data})
+}
+
+export async function deletePost(req: Request, res: Response): Promise<void> {
+  const {id} = req.params
+  
+  if(typeof id !== "string" || id.trim() === ""){
+    res.status(400).json({ok:false, error: "id is required"})
+    return
+  }
+
+  if(!mongoose.isValidObjectId(id)){
+  
+    res.status(400).json({ ok: false, error: "id is invalid" });
+    return;
+  }
+
+  const post = await PostModel.findById(id).exec()
+  if(!post) {
+      res.status(404).json({ok:false, error: "post not found"})
+      return
+    }
+  await post.deleteOne()
+  res.status(200).json({ok:true, data: {id}})
+
 }
