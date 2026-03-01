@@ -1,19 +1,30 @@
+import { Route, Routes } from "react-router-dom";
+import NotFoundPage from "./pages/NotFoundPage";
+import FeedPage  from "./pages/FeedPage";
+import AppLayout from "./layouts/AppLayout";
+import SearchPage from "./pages/SearchPage";
+import ProfilePage from "./pages/ProfilePage";
+import NotificationsPage from "./pages/NotificationsPage";
+import MessagePage from "./pages/MessagesPage";
+import ExplorePage from "./pages/ExplorePage";
+import CreatePostPage from "./pages/CreatePostPage";
 
-import './App.css'
 
-function App() {
- 
 
+
+export default function App() {
   return (
-    <>
-      <div className="p-6 text-2xl font-bold">
-       <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>  
-      </div>
-     
-    </>
-  )
+  <Routes>
+    <Route element={<AppLayout/>}>
+    <Route path="/" element={<FeedPage/>}/>
+    <Route path="/search" element={<SearchPage/>}/>
+    <Route path="/explore" element={<ExplorePage/>}/>
+    <Route path="/notifications" element={<NotificationsPage/>}/>
+    <Route path="/messages" element={<MessagePage/>}/>
+    <Route path="/create" element={<CreatePostPage/>}/>
+    <Route path="/profile" element={<ProfilePage/>}/>
+    <Route path="*" element={<NotFoundPage/>}/>
+    </Route>
+  </Routes>
+)
 }
-
-export default App
