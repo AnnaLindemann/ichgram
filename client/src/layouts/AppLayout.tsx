@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarNav } from "@/shared/navigation/SidebarNav";
 import { MobileBottomNav } from "@/shared/navigation/MobileBottomNav";
 import { MobileTopBar } from "@/shared/navigation/MobileTopBar";
+import { Footer } from "./footer";
 
 export default function AppLayout() {
   return (
@@ -15,7 +16,9 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
-
+    <div className="hidden md:block">
+        <Footer />
+    </div>
       <MobileBottomNav />
     </div>
   );
