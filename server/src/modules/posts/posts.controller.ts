@@ -7,8 +7,7 @@ import  mongoose, { Types } from "mongoose";
 
 
 type CreatePostBody = {
-  authorId: unknown;
- imageUrl: unknown;
+  imageUrl: unknown;
  caption?: unknown;
 }
 
@@ -18,20 +17,24 @@ type UpdatePostBody = {
 
 export async function createPost(req: Request, res: Response): Promise<void> {
   const body = req.body as CreatePostBody;
+  
 
   if (req.body === null || typeof req.body !== "object") {
     res.status(400).json({ok: false, error: "Body has to be Object"})
     return
   }
-   if(typeof body.authorId !== "string" || body.authorId.trim() === ""){
-    res.status(400).json({ok: false, error: "authorIs is required"})
-    return
-  }
-  
-   if(!Types.ObjectId.isValid(body.authorId)){
-    res.status(400).json({ok: false, error: "Body is invalid"})
-    return
-  }
+
+  if (!req.user) {
+  res.status(401).json({ ok: false, error: "unauthorized" });
+  return;
+}
+
+const authorId = req.user.id;
+
+if (!Types.ObjectId.isValid(authorId)) {
+  res.status(401).json({ ok: false, error: "authenticated user id is invalid" });
+  return;
+}
 
   if(typeof body.imageUrl !== "string" || body.imageUrl.trim().length < 1){
     res.status(400).json({ok: false, error: "imageUrl is required"})
@@ -44,7 +47,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     return
   }
 }
-  const existed = await UserModel.findById(body.authorId)
+  const existed = await UserModel.findById(authorId)
 
     if(!existed){
        res.status(404).json({ok: false, error: "author is not exists"})
@@ -53,7 +56,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
   }
 
   const input: CreatePostInput = {
-  authorId: body.authorId,
+  authorId,
   imageUrl: body.imageUrl,
   caption: body.caption ?? "",
 }
