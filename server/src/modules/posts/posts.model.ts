@@ -1,31 +1,31 @@
-import mongoose, {Schema, Types, type Model} from "mongoose";
+import { Schema, model, models, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-export type PostDocument = {
-  author: Types.ObjectId;
-  imageUrl: string;
-  caption: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const postSchema = new Schema<PostDocument>(
-{
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const postSchema = new Schema(
+  {
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    imageUrl: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    caption: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 200,
+    },
   },
-  imageUrl:{
-    type: String,
-    required:true,
-  },
-  caption:{
-    type: String,
-    default: "",
-    maxlength: 200
+  {
+    timestamps: true,
+    versionKey: false,
   }
-  },
-  {timestamps: true} 
-)
+);
 
-export const PostModel: Model<PostDocument> = (mongoose.models.Post as Model<PostDocument>) ?? mongoose.model<PostDocument>("Post", postSchema)
+export type Post = InferSchemaType<typeof postSchema>;
+export type PostDocument = HydratedDocument<Post>;
+
+export const PostModel = models.Post || model<Post>("Post", postSchema);

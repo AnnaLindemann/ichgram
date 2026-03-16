@@ -1,7 +1,7 @@
 export type CreatePostInput = {
 authorId: string;
 imageUrl: string;
-caption?: string;
+caption: string;
 }
 
 export type PostDto = {
