@@ -1,53 +1,8 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import { UserModel } from "./users.model.js";
 import mongoose from "mongoose";
+import { toPublicUser } from "./users.type.js";
 
-type CreateUserBody = {
-  email?: unknown;
-  username?: unknown;
-  passwordHash?: unknown;
-}
-
-export async function createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const body = req.body as CreateUserBody;
-
-  if(typeof body.email !== "string" || body.email.trim() === ""){
-    res.status(400).json({ok: false, error: "email is required"})
-    return
-  }
-
-    if(typeof body.username !== "string" || body.username.trim() === ""){
-    res.status(400).json({ok: false, error: "username is required"})
-    return
-  }
-  if(typeof body.passwordHash !== "string" || body.passwordHash.trim() === ""){
-    res.status(400).json({ok: false, error: "passwordHash is required"})
-    return
-  }
-try{
-const created = await UserModel.create({
-  email: body.email.trim().toLowerCase(),
-  username: body.username.trim().toLowerCase(),
-  passwordHash: body.passwordHash,
-})
-res.status(201).json({
-ok: true,
-user:{
-  id:created._id.toString(),
-  email: created.email,
-  username: created.username,
-  createdAt: created.createdAt,
-}
-})
-} catch(err:unknown){
- 
-  if(typeof err === "object" && err !== null && "code" in err && (err as {code?: unknown }).code === 11000) {
-    res.status(409).json({ok: false, error: "email already exists"});
-    return
-  }
-     next(err)
-  }
-}
 
 export async function getUserById(req: Request, res: Response): Promise<void> {
   const {id} = req.params;
@@ -71,12 +26,7 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
 
   res.status(200).json({
     ok: true,
-    user: {
-      id: user._id.toString(),
-      email: user.email,
-      username: user.username,
-      createdAt: user.createdAt,
-    },
+    user: toPublicUser(user),
   });
 }
 
@@ -88,11 +38,6 @@ const users = await UserModel.find()
 
 res.status(200).json({
   ok:true,
-  users:users.map((u) => ({
-id: u._id.toString(),
-email: u.email,
-username: u.username,
-createdAt: u.createdAt,
-  }))
+  users:users.map(toPublicUser)
 })
 }
