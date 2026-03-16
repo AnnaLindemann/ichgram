@@ -1,4 +1,10 @@
-import { Schema, model, models, type InferSchemaType, type HydratedDocument } from "mongoose";
+import mongoose, {
+  Schema,
+  model,
+  type HydratedDocument,
+  type InferSchemaType,
+  type Model,
+} from "mongoose";
 
 const postSchema = new Schema(
   {
@@ -27,5 +33,8 @@ const postSchema = new Schema(
 
 export type Post = InferSchemaType<typeof postSchema>;
 export type PostDocument = HydratedDocument<Post>;
+type PostModelType = Model<Post>;
 
-export const PostModel = models.Post || model<Post>("Post", postSchema);
+export const PostModel =
+  (mongoose.models.Post as PostModelType | undefined) ??
+  model<Post>("Post", postSchema);
