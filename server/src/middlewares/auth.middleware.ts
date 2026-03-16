@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { AuthenticatedUser } from "../modules/auth/auth.type.js";
-import { verifyTocken } from "../shared/jwt.helper.js";
+import { verifyToken } from "../shared/jwt.helper.js";
 
 
 
@@ -24,12 +24,13 @@ export function requireAuth(
   }
 
 try{
-  const payload = verifyTocken(token);
+  const payload = verifyToken(token);
 
   const authenticatedUser: AuthenticatedUser = {
     id: payload.id,
     email: payload.email,
     username: payload.username,
+    role: payload.role,
   };
   req.user = authenticatedUser;
   next()

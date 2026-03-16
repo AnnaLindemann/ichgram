@@ -1,35 +1,53 @@
-import mongoose, {type Model} from "mongoose";
-import type { User } from "./users.type.js";
+import mongoose, { type Model } from "mongoose";
+import type { UserDb } from "./users.type.js";
 
-type UserSchemaShape = Omit<User, "createdAt"> & {
-createdAt: Date;
-}
-
-const userShema = new mongoose.Schema<UserSchemaShape>(
+const userSchema = new mongoose.Schema<UserDb>(
   {
-    email:{
+    email: {
       type: String,
-      required: true,  
-      unique: true,  
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
-    username:{
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    passwordHash: {
       type: String,
       required: true,
     },
-    passwordHash:{
+    bio: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    avatarUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    role: {
       type: String,
       required: true,
-    },
-    createdAt:{
-      type: Date,
-      default: Date.now,
+      default: "user",
+      enum: ["user"],
     },
   },
-    {
-      versionKey: false,
+  {
+    timestamps: true,
+    versionKey: false,
   }
-)
+);
 
-export const UserModel: Model<UserSchemaShape> =
-  (mongoose.models.User as Model<UserSchemaShape>) ??
-  mongoose.model<UserSchemaShape>("User", userShema);
+export const UserModel: Model<UserDb> =
+  (mongoose.models.User as Model<UserDb>) ??
+  mongoose.model<UserDb>("User", userSchema);
