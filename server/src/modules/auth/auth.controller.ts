@@ -1,21 +1,32 @@
 import type { Request, Response } from "express";
 import { UserModel } from "../users/users.model.js";
 import { toPublicUser } from "../users/users.type.js";
-import { hashPassword } from "../../shared/password.helper.js";
 import { signToken } from "../../shared/jwt.helper.js";
-import { registerSchema } from "./auth.validation.js";
-import type { RegisterSchemaInput } from "./auth.validation.js";
+import {
+  loginSchema,
+  registerSchema,
+  type LoginSchemaInput,
+  type RegisterSchemaInput,
+} from "./auth.validation.js";
+import {
+  comparePassword,
+  hashPassword,
+} from "../../shared/password.helper.js";
 
 
-
-export async function register(req: Request<unknown , unknown,RegisterSchemaInput>, res: Response ): Promise<Response> {
+export async function register(
+  req: Request<unknown, unknown, RegisterSchemaInput>,
+  res: Response
+): Promise<void> {
 const parsed = registerSchema.safeParse(req.body);
 
 if (!parsed.success) {
-  return res.status(400).json({
-    message: "Validation failed",
-    errors: parsed.error.flatten().fieldErrors,
-  });
+ res.status(400).json({
+  ok: false,
+  message: "Validation failed",
+  errors: parsed.error.flatten().fieldErrors,
+});
+return;
 }
 
 const { username, email, fullName, password } = parsed.data;
@@ -24,9 +35,11 @@ const { username, email, fullName, password } = parsed.data;
   }).exec();
 
 if(existingUser){
-   return res.status(409).json({
+  res.status(409).json({
+    ok: false,
       message: "User with this email or username already exists",
        });
+       return 
       }
 
       const passwordHash = await hashPassword(password);
@@ -41,6 +54,54 @@ if(existingUser){
         role: createdUser.role,
       });
 
-      return res.status(201).json({token, user: toPublicUser(createdUser)})
+      res.status(201).json({ok: true, data: {token, user: toPublicUser(createdUser)}}) 
+      return
+}
 
+
+export async function login(
+  req: Request<unknown, unknown, LoginSchemaInput>,
+  res: Response
+): Promise<void> {
+  const parsed = loginSchema.safeParse(req.body);
+
+if (!parsed.success) {
+ res.status(400).json({
+  ok: false,
+  message: "Validation failed",
+  errors: parsed.error.flatten().fieldErrors,
+});
+return;
+}
+
+const {identifier, password} = parsed.data
+
+const isEmail = identifier.includes("@");
+
+const existingUser = await UserModel.findOne(
+  isEmail ? {email: identifier} : {username: identifier}
+).exec();
+
+if(!existingUser){
+    res.status(401).json({ok: false,
+      message: "Invalid credentials",
+       });
+     return 
+    }
+const isPasswordCorrect= await comparePassword(password, existingUser.passwordHash)
+
+if(!isPasswordCorrect){
+  res.status(401).json({ok: false,message:"Invalid credentials"}) 
+  return
+}
+
+ const token = signToken({
+    id: String(existingUser._id),
+    email: existingUser.email,
+    username: existingUser.username,
+    role: existingUser.role,
+  });
+
+   res.status(200).json({ok: true, data: {token, user: toPublicUser(existingUser)}}) 
+return
 }

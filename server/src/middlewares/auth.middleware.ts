@@ -15,6 +15,12 @@ export function requireAuth(
     res.status(401).json({ok: false, error: "authorization header is required"});
     return;
   }
+  const parts = authorizationHeader.split(" ");
+
+  if (parts.length !== 2) {
+  res.status(401).json({ ok: false, error: "invalid authorization format" });
+  return;
+}
 
   const [scheme, token] = authorizationHeader.split(" ");
 

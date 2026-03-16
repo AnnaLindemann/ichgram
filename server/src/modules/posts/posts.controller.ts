@@ -2,137 +2,133 @@ import type { Response, Request } from "express";
 import type { CreatePostInput, PostDto } from "./posts.type.js";
 import { UserModel } from "../users/users.model.js";
 import { PostModel } from "./posts.model.js";
-import  mongoose, { Types } from "mongoose";
-
-
-
-type CreatePostBody = {
-  imageUrl: unknown;
- caption?: unknown;
-}
-
-type UpdatePostBody = {
-  caption?: unknown;
-}
+import mongoose, { Types } from "mongoose";
+import {
+  createPostSchema,
+  updatePostSchema,
+  listPostsQuerySchema,
+} from "./posts.schemas.js";
 
 export async function createPost(req: Request, res: Response): Promise<void> {
-  const body = req.body as CreatePostBody;
-  
-
-  if (req.body === null || typeof req.body !== "object") {
-    res.status(400).json({ok: false, error: "Body has to be Object"})
-    return
-  }
-
   if (!req.user) {
-  res.status(401).json({ ok: false, error: "unauthorized" });
-  return;
-}
-
-const authorId = req.user.id;
-
-if (!Types.ObjectId.isValid(authorId)) {
-  res.status(401).json({ ok: false, error: "authenticated user id is invalid" });
-  return;
-}
-
-  if(typeof body.imageUrl !== "string" || body.imageUrl.trim().length < 1){
-    res.status(400).json({ok: false, error: "imageUrl is required"})
-    return
+    res.status(401).json({ ok: false, error: "unauthorized" });
+    return;
   }
 
-  if(body.caption !== undefined){
-   if(typeof body.caption !== "string" || body.caption.length > 200){
-    res.status(400).json({ok: false, error: "caption has to be string"})
-    return
-  }
-}
-  const existed = await UserModel.findById(authorId)
+  const authorId = req.user.id;
 
-    if(!existed){
-       res.status(404).json({ok: false, error: "author is not exists"})
-    return
-    
+  if (!Types.ObjectId.isValid(authorId)) {
+    res.status(401).json({ ok: false, error: "authenticated user id is invalid" });
+    return;
+  }
+
+  const parsed = createPostSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+
+    res.status(400).json({
+      ok: false,
+      error: firstIssue?.message ?? "invalid request body",
+    });
+    return;
+  }
+
+  const { imageUrl, caption } = parsed.data;
+
+  const existed = await UserModel.findById(authorId).exec();
+
+  if (!existed) {
+    res.status(404).json({ ok: false, error: "author does not exist" });
+    return;
   }
 
   const input: CreatePostInput = {
-  authorId,
-  imageUrl: body.imageUrl,
-  caption: body.caption ?? "",
-}
- 
-    const created = await PostModel.create({
-      author: new Types.ObjectId(input.authorId),
-      imageUrl: input.imageUrl,
-      caption: input.caption ?? "",
-    })
-    const dto: PostDto = {
-      id: created._id.toString(),
-      authorId: created.author.toString(),
-       caption: created.caption,
-      imageUrl: created.imageUrl,
-       createdAt: created.createdAt.toISOString(),
-      updatedAt: created.updatedAt.toISOString(),
-    }
-        
-    res.status(201).json({
-      ok:true,
-      data:dto,
-})
+    authorId,
+    imageUrl,
+    caption: caption ?? "",
+  };
 
-}
+  const created = await PostModel.create({
+    author: new Types.ObjectId(input.authorId),
+    imageUrl: input.imageUrl,
+    caption: input.caption,
+  });
 
-export async function getPostById(req: Request, res: Response): Promise<void>{
-const {id} = req.params
+  const dto: PostDto = {
+    id: created._id.toString(),
+    authorId: created.author.toString(),
+    caption: created.caption,
+    imageUrl: created.imageUrl,
+    createdAt: created.createdAt.toISOString(),
+    updatedAt: created.updatedAt.toISOString(),
+  };
 
-if(typeof id !== "string" || id.trim() === ""){
-  res.status(400).json({ok: false, error: "id is required"})
-  return
+  res.status(201).json({
+    ok: true,
+    data: dto,
+  });
 }
 
-if(!mongoose.isValidObjectId(id)){
-  res.status(400).json({ok:false, error: "post is invalid"})
-  return
-}
+export async function getPostById(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
 
-const post = await PostModel.findById(id).exec()
-
-if (!post){
-  res.status(404).json({ok: false, error: "post not found"})
-  return
-}
-const data: PostDto = {
-  id: post._id.toString(),
-  authorId: post.author.toString(),
-  caption: post.caption,
-  imageUrl: post.imageUrl,
-  createdAt: post.createdAt.toISOString(),
-  updatedAt: post.updatedAt.toISOString(),
-    }
-res.status(200).json({ok: true, data})
-
-}
-
-
-export async function listPosts(req: Request, res:Response): Promise<void> {
-  const authorIdRaw: unknown = req.query.authorId
-  let filter : Record<string, unknown> = {}
- if(authorIdRaw !== undefined){
-  if(typeof authorIdRaw !== "string"){
-    res.status(400).json({ok:false, error: "AuthorId has to be string"})
-    return
-  }
-
-  if(!mongoose.isValidObjectId(authorIdRaw)){
-       res.status(400).json({ ok: false, error: "AuthorId is invalid" });
+  if (typeof id !== "string" || id.trim() === "") {
+    res.status(400).json({ ok: false, error: "id is required" });
     return;
   }
-  filter = {author: authorIdRaw}
+
+  if (!mongoose.isValidObjectId(id)) {
+    res.status(400).json({ ok: false, error: "post is invalid" });
+    return;
+  }
+
+  const post = await PostModel.findById(id).exec();
+
+  if (!post) {
+    res.status(404).json({ ok: false, error: "post not found" });
+    return;
+  }
+
+  const data: PostDto = {
+    id: post._id.toString(),
+    authorId: post.author.toString(),
+    caption: post.caption,
+    imageUrl: post.imageUrl,
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+  };
+
+  res.status(200).json({ ok: true, data });
 }
- const posts = await PostModel.find(filter)
-  .sort({createdAt: -1})
-  .limit(20)
-  .exec()
+
+export async function listPosts(req: Request, res: Response): Promise<void> {
+  const parsedQuery = listPostsQuerySchema.safeParse(req.query);
+
+  if (!parsedQuery.success) {
+    const firstIssue = parsedQuery.error.issues[0];
+
+    res.status(400).json({
+      ok: false,
+      error: firstIssue?.message ?? "invalid query",
+    });
+    return;
+  }
+
+  const { authorId } = parsedQuery.data;
+
+  const filter: Record<string, unknown> = {};
+
+  if (authorId !== undefined) {
+    if (!mongoose.isValidObjectId(authorId)) {
+      res.status(400).json({ ok: false, error: "authorId is invalid" });
+      return;
+    }
+
+    filter.author = authorId;
+  }
+
+  const posts = await PostModel.find(filter).sort({ createdAt: -1 }).limit(20).exec();
 
   res.status(200).json({
     ok: true,
@@ -142,80 +138,101 @@ export async function listPosts(req: Request, res:Response): Promise<void> {
       imageUrl: p.imageUrl,
       caption: p.caption,
       createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString()
-  }))
-})
+      updatedAt: p.updatedAt.toISOString(),
+    })),
+  });
 }
 
-export async function updatePostCaption(req: Request, res: Response): Promise<void>{
-  const {id} = req.params
- 
-  if(typeof id !== "string" || id.trim() === ""){
-    res.status(400).json({ok: false, error: "id is required"})
-    return
-  }
-  if(!mongoose.isValidObjectId(id)){
-    res.status(400).json({ok:false, error: "id is invalid"})
-  return  
-  }
-  if(req.body === null || typeof req.body !== "object" || Array.isArray(req.body)){
-      res.status(400).json({ok:false, error: "body has to be an object"})
-  return 
-  }
-  
-  const body = req.body as UpdatePostBody
-   
-  if(typeof body.caption !== "string"){
-      res.status(400).json({ok:false, error: "caption is required"})
-  return 
-  }
-  
-  const caption = body.caption.trim()
-  if(caption.length > 200){
-    res.status(400).json({ok:false, error: "has to be less as 200"})
-  return 
+export async function updatePostCaption(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  if (typeof id !== "string" || id.trim() === "") {
+    res.status(400).json({ ok: false, error: "id is required" });
+    return;
   }
 
-  const post = await PostModel.findById(id).exec()
-
-if (!post){
-  res.status(404).json({ok: false, error: "post not found"})
-  return
-}
-post.caption = caption
-await post.save()
-
-const data: PostDto = {
-  id: post._id.toString(),
-  authorId: post.author.toString(),
-  caption: post.caption,
-  imageUrl: post.imageUrl,
-  createdAt: post.createdAt.toISOString(),
-  updatedAt: post.updatedAt.toISOString(),
-    }
-res.status(200).json({ok: true, data})
-}
-
-export async function deletePost(req: Request, res: Response): Promise<void> {
-  const {id} = req.params
-  
-  if(typeof id !== "string" || id.trim() === ""){
-    res.status(400).json({ok:false, error: "id is required"})
-    return
-  }
-
-  if(!mongoose.isValidObjectId(id)){
-  
+  if (!mongoose.isValidObjectId(id)) {
     res.status(400).json({ ok: false, error: "id is invalid" });
     return;
   }
 
-  const post = await PostModel.findById(id).exec()
-  if(!post) {
-      res.status(404).json({ok:false, error: "post not found"})
-      return
-    }
-  await post.deleteOne()
-  res.status(200).json({ok:true, data: {id}})
+  if (!req.user) {
+    res.status(401).json({ ok: false, error: "unauthorized" });
+    return;
+  }
 
+  const parsed = updatePostSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+
+    res.status(400).json({
+      ok: false,
+      error: firstIssue?.message ?? "invalid request body",
+    });
+    return;
+  }
+
+  const { caption } = parsed.data;
+
+  const post = await PostModel.findById(id).exec();
+
+  if (!post) {
+    res.status(404).json({ ok: false, error: "post not found" });
+    return;
+  }
+
+  if (post.author.toString() !== req.user.id) {
+    res.status(403).json({ ok: false, error: "forbidden" });
+    return;
+  }
+
+  post.caption = caption;
+  await post.save();
+
+  const data: PostDto = {
+    id: post._id.toString(),
+    authorId: post.author.toString(),
+    caption: post.caption,
+    imageUrl: post.imageUrl,
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+  };
+
+  res.status(200).json({ ok: true, data });
+}
+
+export async function deletePost(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  if (typeof id !== "string" || id.trim() === "") {
+    res.status(400).json({ ok: false, error: "id is required" });
+    return;
+  }
+
+  if (!mongoose.isValidObjectId(id)) {
+    res.status(400).json({ ok: false, error: "id is invalid" });
+    return;
+  }
+
+  const post = await PostModel.findById(id).exec();
+
+  if (!post) {
+    res.status(404).json({ ok: false, error: "post not found" });
+    return;
+  }
+
+  if (!req.user) {
+    res.status(401).json({ ok: false, error: "unauthorized" });
+    return;
+  }
+
+  if (post.author.toString() !== req.user.id) {
+    res.status(403).json({ ok: false, error: "forbidden" });
+    return;
+  }
+
+  await post.deleteOne();
+
+  res.status(200).json({ ok: true, data: { id } });
 }

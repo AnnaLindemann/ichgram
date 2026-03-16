@@ -25,3 +25,16 @@ export const registerSchema = z.object({
 });
 
 export type RegisterSchemaInput = z.infer<typeof registerSchema>;
+
+export const loginSchema = z.object({
+   identifier: z
+    .string()
+    .trim()
+    .min(1, "Email or username is required")
+    .transform((value) => value.toLowerCase()),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters long"),  
+})
+
+export type LoginSchemaInput = z.infer<typeof loginSchema>

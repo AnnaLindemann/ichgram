@@ -10,5 +10,5 @@ export const postRouter = Router();
 postRouter.post("/",requireAuth, asyncHandler(createPost))
 postRouter.get("/",asyncHandler(listPosts))
 postRouter.get("/:id", asyncHandler(getPostById))
-postRouter.patch("/:id", asyncHandler(updatePostCaption))
-postRouter.delete("/:id",asyncHandler(deletePost))
+postRouter.patch("/:id",requireAuth, asyncHandler(updatePostCaption))
+postRouter.delete("/:id",requireAuth, asyncHandler(deletePost))

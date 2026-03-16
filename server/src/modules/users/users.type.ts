@@ -31,6 +31,7 @@ export type PublicUser = {
 
 export type LoginUserInput = {
   email: string;
+  username: string,
   password: string;
 };
 
