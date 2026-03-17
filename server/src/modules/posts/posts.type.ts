@@ -11,6 +11,8 @@ export type PostDto = {
   imageUrl: string;
   createdAt: string;
   updatedAt: string;
+  likesCount: number;
+  likedByMe: boolean;
 }
 
 export type CreatePostResponse = {

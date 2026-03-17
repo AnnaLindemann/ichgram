@@ -8,6 +8,7 @@ import {
   updatePostSchema,
   listPostsQuerySchema,
 } from "./posts.schemas.js";
+import { getLikesMetaForPosts } from "../likes/likes.service.js";
 
 export async function createPost(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -62,7 +63,9 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     imageUrl: created.imageUrl,
     createdAt: created.createdAt.toISOString(),
     updatedAt: created.updatedAt.toISOString(),
-  };
+    likesCount: 0,
+    likedByMe: false,
+   };
 
   res.status(201).json({
     ok: true,
@@ -89,14 +92,18 @@ export async function getPostById(req: Request, res: Response): Promise<void> {
     res.status(404).json({ ok: false, error: "post not found" });
     return;
   }
-
+  const viewerId = req.user?.id;
+  const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
+  const meta = likesMeta[String(post._id)];
   const data: PostDto = {
-    id: post._id.toString(),
-    authorId: post.author.toString(),
-    caption: post.caption,
-    imageUrl: post.imageUrl,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
+   id: post._id.toString(),
+      authorId: post.author.toString(),
+      imageUrl: post.imageUrl,
+      caption: post.caption,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+      likesCount: meta?.likesCount ?? 0,
+      likedByMe: meta?.likedByMe ?? false,
   };
 
   res.status(200).json({ ok: true, data });
@@ -129,17 +136,30 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
   }
 
   const posts = await PostModel.find(filter).sort({ createdAt: -1 }).limit(20).exec();
+  const postIds = posts.map((post) => String(post._id));
+
+const viewerId = req.user?.id;
+
+const likesMeta = await getLikesMetaForPosts(postIds, viewerId);
 
   res.status(200).json({
     ok: true,
-    data: posts.map((p) => ({
-      id: p._id.toString(),
+    data: posts.map((p) => {
+    const postId = p._id.toString();
+    const meta = likesMeta[postId];
+
+    return {
+      id: postId,
       authorId: p.author.toString(),
       imageUrl: p.imageUrl,
       caption: p.caption,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
-    })),
+
+      likesCount: meta?.likesCount ?? 0,
+      likedByMe: meta?.likedByMe ?? false,
+    };
+    }),
   });
 }
 
@@ -190,6 +210,10 @@ export async function updatePostCaption(req: Request, res: Response): Promise<vo
   post.caption = caption;
   await post.save();
 
+  const viewerId = req.user?.id;
+const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
+const meta = likesMeta[String(post._id)];
+
   const data: PostDto = {
     id: post._id.toString(),
     authorId: post.author.toString(),
@@ -197,6 +221,8 @@ export async function updatePostCaption(req: Request, res: Response): Promise<vo
     imageUrl: post.imageUrl,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
+    likesCount: meta?.likesCount ?? 0,
+  likedByMe: meta?.likedByMe ?? false,
   };
 
   res.status(200).json({ ok: true, data });
