@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { postRouter } from "./modules/posts/posts.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { commentsRouter } from "./modules/comments/comments.routes.js";
 
 export function createApp(){
   const app = express();
@@ -16,6 +17,8 @@ export function createApp(){
   app.use("/api/users",usersRouter)
   app.use("/api/posts",postRouter)
   app.use("/api/auth", authRouter);
+  app.use("/api/posts", commentsRouter);
+  app.use("/api", commentsRouter);
   
   app.get("/api/health", (_req,res)=> {
     const state = mongoose.connection.readyState;
