@@ -28,6 +28,12 @@ export type PublicUser = {
   updatedAt: string;
 };
 
+export type SearchUserDto = {
+  id: string;
+  username: string;
+  fullName: string;
+  avatarUrl: string;
+};
 
 export type LoginUserInput = {
   email: string;
@@ -46,5 +52,22 @@ export function toPublicUser(user: UserDocument): PublicUser {
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
+  };
+}
+
+
+export type SearchUserSource = {
+  _id: unknown;
+  username: string;
+  fullName: string;
+  avatarUrl: string;
+};
+
+export function toSearchUserDto(user: SearchUserSource): SearchUserDto {
+  return {
+    id: String(user._id),
+    username: user.username,
+    fullName: user.fullName,
+    avatarUrl: user.avatarUrl,
   };
 }

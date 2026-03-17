@@ -2,7 +2,9 @@ import type { Request, Response } from "express";
 import { UserModel } from "./users.model.js";
 import mongoose from "mongoose";
 import { toPublicUser } from "./users.type.js";
-import { updateMeSchema } from "./users.schemas.js";
+import { updateMeSchema, searchUsersQuerySchema  } from "./users.schemas.js";
+import { toSearchUserDto } from "./users.type.js";
+import { escapeRegex } from "../../shared/escapeRegex.js";
 
 export async function getUserById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
@@ -102,5 +104,46 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
   res.status(200).json({
     ok: true,
     data: toPublicUser(user),
+  });
+}
+
+export async function searchUsers(req: Request, res: Response): Promise<void> {
+  const parsed = searchUsersQuerySchema.safeParse(req.query);
+
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    res.status(400).json({
+      ok: false,
+      error: firstIssue?.message ?? "invalid query params",
+    });
+    return;
+  }
+
+  const { q, limit } = parsed.data;
+  const escapedQuery = escapeRegex(q);
+  const regex = new RegExp(escapedQuery, "i");
+
+  const users = await UserModel.find(
+    {
+      $or: [{ username: regex }, { fullName: regex }],
+    },
+    {
+      username: 1,
+      fullName: 1,
+      avatarUrl: 1,
+    },
+  )
+    .sort({ username: 1 })
+    .limit(limit)
+    .lean()
+    .exec();
+
+  const items = users.map((user) => toSearchUserDto(user));
+
+  res.status(200).json({
+    ok: true,
+    data: {
+      items,
+    },
   });
 }

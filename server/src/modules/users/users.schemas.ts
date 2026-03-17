@@ -34,3 +34,19 @@ export const updateMeSchema = z
   );
 
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;
+
+export const searchUsersQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .min(2, "q must contain at least 2 characters")
+    .max(50, "q must contain at most 50 characters"),
+  limit: z.coerce
+    .number()
+    .int("limit must be an integer")
+    .min(1, "limit must be at least 1")
+    .max(20, "limit must be at most 20")
+    .default(10),
+});
+
+export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
