@@ -1,8 +1,8 @@
 export type CreatePostInput = {
-authorId: string;
-imageUrl: string;
-caption: string;
-}
+  authorId: string;
+  imageUrl: string;
+  caption: string;
+};
 
 export type PostDto = {
   id: string;
@@ -13,9 +13,24 @@ export type PostDto = {
   updatedAt: string;
   likesCount: number;
   likedByMe: boolean;
-}
+};
 
 export type CreatePostResponse = {
-  ok:true;
+  ok: true;
   data: PostDto;
-}
+};
+
+export type ListPostsMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  sort: "createdAt";
+  order: "asc" | "desc";
+};
+
+export type ListPostsResponse = {
+  ok: true;
+  data: PostDto[];
+  meta: ListPostsMeta;
+};

@@ -1,47 +1,34 @@
-import type { Response, Request } from "express";
-import type { CreatePostInput, PostDto } from "./posts.type.js";
+import type { Request, Response } from "express";
+import mongoose, { Types } from "mongoose";
+import type { CreatePostInput, ListPostsResponse, PostDto } from "./posts.type.js";
 import { UserModel } from "../users/users.model.js";
 import { PostModel } from "./posts.model.js";
-import mongoose, { Types } from "mongoose";
 import {
   createPostSchema,
   updatePostSchema,
   listPostsQuerySchema,
 } from "./posts.schemas.js";
 import { getLikesMetaForPosts } from "../likes/likes.service.js";
+import { HttpError } from "../../shared/http-error.js";
 
 export async function createPost(req: Request, res: Response): Promise<void> {
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
   const authorId = req.user.id;
 
   if (!Types.ObjectId.isValid(authorId)) {
-    res.status(401).json({ ok: false, error: "authenticated user id is invalid" });
-    return;
+    throw new HttpError(401, "authenticated user id is invalid");
   }
 
-  const parsed = createPostSchema.safeParse(req.body);
-
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid request body",
-    });
-    return;
-  }
-
-  const { imageUrl, caption } = parsed.data;
+  const parsed = createPostSchema.parse(req.body);
+  const { imageUrl, caption } = parsed;
 
   const existed = await UserModel.findById(authorId).exec();
 
   if (!existed) {
-    res.status(404).json({ ok: false, error: "author does not exist" });
-    return;
+    throw new HttpError(404, "author does not exist");
   }
 
   const input: CreatePostInput = {
@@ -65,7 +52,7 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     updatedAt: created.updatedAt.toISOString(),
     likesCount: 0,
     likedByMe: false,
-   };
+  };
 
   res.status(201).json({
     ok: true,
@@ -77,74 +64,67 @@ export async function getPostById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
   if (typeof id !== "string" || id.trim() === "") {
-    res.status(400).json({ ok: false, error: "id is required" });
-    return;
+    throw new HttpError(400, "id is required");
   }
 
   if (!mongoose.isValidObjectId(id)) {
-    res.status(400).json({ ok: false, error: "post is invalid" });
-    return;
+    throw new HttpError(400, "post is invalid");
   }
 
   const post = await PostModel.findById(id).exec();
 
   if (!post) {
-    res.status(404).json({ ok: false, error: "post not found" });
-    return;
+    throw new HttpError(404, "post not found");
   }
+
   const viewerId = req.user?.id;
   const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
   const meta = likesMeta[String(post._id)];
+
   const data: PostDto = {
-   id: post._id.toString(),
-      authorId: post.author.toString(),
-      imageUrl: post.imageUrl,
-      caption: post.caption,
-      createdAt: post.createdAt.toISOString(),
-      updatedAt: post.updatedAt.toISOString(),
-      likesCount: meta?.likesCount ?? 0,
-      likedByMe: meta?.likedByMe ?? false,
+    id: post._id.toString(),
+    authorId: post.author.toString(),
+    imageUrl: post.imageUrl,
+    caption: post.caption,
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+    likesCount: meta?.likesCount ?? 0,
+    likedByMe: meta?.likedByMe ?? false,
   };
 
   res.status(200).json({ ok: true, data });
 }
 
 export async function listPosts(req: Request, res: Response): Promise<void> {
-  const parsedQuery = listPostsQuerySchema.safeParse(req.query);
-
-  if (!parsedQuery.success) {
-    const firstIssue = parsedQuery.error.issues[0];
-
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid query",
-    });
-    return;
-  }
-
-  const { authorId } = parsedQuery.data;
+  const { authorId, page, limit, sort, order } = listPostsQuerySchema.parse(req.query);
 
   const filter: Record<string, unknown> = {};
 
   if (authorId !== undefined) {
     if (!mongoose.isValidObjectId(authorId)) {
-      res.status(400).json({ ok: false, error: "authorId is invalid" });
-      return;
+      throw new HttpError(400, "authorId is invalid");
     }
 
-    filter.author = authorId;
+    filter.author = new Types.ObjectId(authorId);
   }
 
-  const posts = await PostModel.find(filter).sort({ createdAt: -1 }).limit(20).exec();
+  const skip = (page - 1) * limit;
+  const sortDirection = order === "asc" ? 1 : -1;
+
+  const [posts, total] = await Promise.all([
+    PostModel.find(filter)
+      .sort({ [sort]: sortDirection })
+      .skip(skip)
+      .limit(limit)
+      .exec(),
+    PostModel.countDocuments(filter).exec(),
+  ]);
+
   const postIds = posts.map((post) => String(post._id));
+  const viewerId = req.user?.id;
+  const likesMeta = await getLikesMetaForPosts(postIds, viewerId);
 
-const viewerId = req.user?.id;
-
-const likesMeta = await getLikesMetaForPosts(postIds, viewerId);
-
-  res.status(200).json({
-    ok: true,
-    data: posts.map((p) => {
+  const data: PostDto[] = posts.map((p) => {
     const postId = p._id.toString();
     const meta = likesMeta[postId];
 
@@ -155,64 +135,62 @@ const likesMeta = await getLikesMetaForPosts(postIds, viewerId);
       caption: p.caption,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
-
       likesCount: meta?.likesCount ?? 0,
       likedByMe: meta?.likedByMe ?? false,
     };
-    }),
   });
+
+  const pages = total === 0 ? 0 : Math.ceil(total / limit);
+
+  const response: ListPostsResponse = {
+    ok: true,
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      pages,
+      sort,
+      order,
+    },
+  };
+
+  res.status(200).json(response);
 }
 
 export async function updatePostCaption(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
   if (typeof id !== "string" || id.trim() === "") {
-    res.status(400).json({ ok: false, error: "id is required" });
-    return;
+    throw new HttpError(400, "id is required");
   }
 
   if (!mongoose.isValidObjectId(id)) {
-    res.status(400).json({ ok: false, error: "id is invalid" });
-    return;
+    throw new HttpError(400, "id is invalid");
   }
 
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const parsed = updatePostSchema.safeParse(req.body);
-
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid request body",
-    });
-    return;
-  }
-
-  const { caption } = parsed.data;
+  const { caption } = updatePostSchema.parse(req.body);
 
   const post = await PostModel.findById(id).exec();
 
   if (!post) {
-    res.status(404).json({ ok: false, error: "post not found" });
-    return;
+    throw new HttpError(404, "post not found");
   }
 
   if (post.author.toString() !== req.user.id) {
-    res.status(403).json({ ok: false, error: "forbidden" });
-    return;
+    throw new HttpError(403, "forbidden");
   }
 
   post.caption = caption;
   await post.save();
 
   const viewerId = req.user?.id;
-const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
-const meta = likesMeta[String(post._id)];
+  const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
+  const meta = likesMeta[String(post._id)];
 
   const data: PostDto = {
     id: post._id.toString(),
@@ -222,7 +200,7 @@ const meta = likesMeta[String(post._id)];
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
     likesCount: meta?.likesCount ?? 0,
-  likedByMe: meta?.likedByMe ?? false,
+    likedByMe: meta?.likedByMe ?? false,
   };
 
   res.status(200).json({ ok: true, data });
@@ -232,30 +210,25 @@ export async function deletePost(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
   if (typeof id !== "string" || id.trim() === "") {
-    res.status(400).json({ ok: false, error: "id is required" });
-    return;
+    throw new HttpError(400, "id is required");
   }
 
   if (!mongoose.isValidObjectId(id)) {
-    res.status(400).json({ ok: false, error: "id is invalid" });
-    return;
+    throw new HttpError(400, "id is invalid");
   }
 
   const post = await PostModel.findById(id).exec();
 
   if (!post) {
-    res.status(404).json({ ok: false, error: "post not found" });
-    return;
+    throw new HttpError(404, "post not found");
   }
 
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
   if (post.author.toString() !== req.user.id) {
-    res.status(403).json({ ok: false, error: "forbidden" });
-    return;
+    throw new HttpError(403, "forbidden");
   }
 
   await post.deleteOne();

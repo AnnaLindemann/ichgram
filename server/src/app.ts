@@ -7,6 +7,7 @@ import { usersRouter } from "./modules/users/users.routes.js";
 import { postRouter } from "./modules/posts/posts.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { commentsRouter } from "./modules/comments/comments.routes.js";
+import { errorMiddleware } from "./middlewares/error.middleware.js";
 
 export function createApp(){
   const app = express();
@@ -20,25 +21,28 @@ export function createApp(){
   app.use("/api/posts", commentsRouter);
   app.use("/api", commentsRouter);
   
-  app.get("/api/health", (_req,res)=> {
-    const state = mongoose.connection.readyState;
-    const dbUp = state === 1;
-    if(!dbUp) {
-      return res.status(503).json({ok: false, db: false, state});
-    }
-    return res.status(200).json({ok: true, db: true})
+app.get("/api/health", (_req, res) => {
+  const state = mongoose.connection.readyState;
+  const dbUp = state === 1;
+
+  if (!dbUp) {
+    res.status(503).json({
+      ok: false,
+      error: "database is not connected",
+    });
+    return;
+  }
+
+  res.status(200).json({
+    ok: true,
+    data: {
+      status: "ok",
+      database: "connected",
+    },
   });
+});
   
-  app.use(
-    (
-      _err: unknown,
-      _req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction
-    ) => {
-      res.status(500).json({ ok: false, error: "internal error" });
-    }
-  );
-  
+app.use(errorMiddleware);
+
   return app;
   }

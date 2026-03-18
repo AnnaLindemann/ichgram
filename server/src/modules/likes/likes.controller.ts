@@ -4,44 +4,28 @@ import mongoose, { Types } from "mongoose";
 import { LikeModel } from "./likes.model.js";
 import { PostModel } from "../posts/posts.model.js";
 import { likePostParamsSchema } from "./likes.schemas.js";
+import { HttpError } from "../../shared/http-error.js";
+
+function isMongoDuplicateKeyError(error: unknown): error is { code: number } {
+  return typeof error === "object" && error !== null && "code" in error;
+}
 
 export async function likePost(req: Request, res: Response): Promise<void> {
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const parsedParams = likePostParamsSchema.safeParse(req.params);
-
-  if (!parsedParams.success) {
-    const firstIssue = parsedParams.error.issues[0];
-
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "post id is invalid",
-    });
-    return;
-  }
-
+  const { id: postId } = likePostParamsSchema.parse(req.params);
   const userId = req.user.id;
-  const postId = parsedParams.data.id;
 
   if (!Types.ObjectId.isValid(userId)) {
-    res.status(401).json({
-      ok: false,
-      error: "authenticated user id is invalid",
-    });
-    return;
+    throw new HttpError(401, "authenticated user id is invalid");
   }
 
   const postExists = await PostModel.exists({ _id: postId });
 
   if (!postExists) {
-    res.status(404).json({
-      ok: false,
-      error: "post not found",
-    });
-    return;
+    throw new HttpError(404, "post not found");
   }
 
   try {
@@ -51,19 +35,11 @@ export async function likePost(req: Request, res: Response): Promise<void> {
     });
   } catch (error: unknown) {
     if (error instanceof mongoose.Error.ValidationError) {
-      res.status(400).json({
-        ok: false,
-        error: "invalid like payload",
-      });
-      return;
+      throw new HttpError(400, "invalid like payload");
     }
 
-    if (error instanceof mongoose.Error && "code" in error && error.code === 11000) {
-      res.status(409).json({
-        ok: false,
-        error: "post already liked",
-      });
-      return;
+    if (isMongoDuplicateKeyError(error) && error.code === 11000) {
+      throw new HttpError(409, "post already liked");
     }
 
     throw error;
@@ -84,31 +60,14 @@ export async function likePost(req: Request, res: Response): Promise<void> {
 
 export async function unlikePost(req: Request, res: Response): Promise<void> {
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const parsedParams = likePostParamsSchema.safeParse(req.params);
-
-  if (!parsedParams.success) {
-    const firstIssue = parsedParams.error.issues[0];
-
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "post id is invalid",
-    });
-    return;
-  }
-
+  const { id: postId } = likePostParamsSchema.parse(req.params);
   const userId = req.user.id;
-  const postId = parsedParams.data.id;
 
   if (!Types.ObjectId.isValid(userId)) {
-    res.status(401).json({
-      ok: false,
-      error: "authenticated user id is invalid",
-    });
-    return;
+    throw new HttpError(401, "authenticated user id is invalid");
   }
 
   await LikeModel.findOneAndDelete({

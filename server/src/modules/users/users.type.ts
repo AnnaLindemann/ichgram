@@ -24,8 +24,8 @@ export type PublicUser = {
   bio: string;
   avatarUrl: string;
   role: UserRole;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
 };
 
 export type SearchUserDto = {
@@ -37,9 +37,23 @@ export type SearchUserDto = {
 
 export type LoginUserInput = {
   email: string;
-  username: string,
+  username: string;
   password: string;
 };
+
+function toIsoOrNull(value: unknown): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value as string);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+}
 
 export function toPublicUser(user: UserDocument): PublicUser {
   return {
@@ -50,11 +64,10 @@ export function toPublicUser(user: UserDocument): PublicUser {
     role: user.role,
     bio: user.bio,
     avatarUrl: user.avatarUrl,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
+    createdAt: toIsoOrNull(user.createdAt),
+    updatedAt: toIsoOrNull(user.updatedAt),
   };
 }
-
 
 export type SearchUserSource = {
   _id: unknown;

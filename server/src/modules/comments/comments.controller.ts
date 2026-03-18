@@ -2,45 +2,31 @@ import type { Request, Response } from "express";
 import { PostModel } from "../posts/posts.model.js";
 import { CommentModel } from "./comments.model.js";
 import { toPublicComment } from "./comments.type.js";
-import { commentPostParamsSchema,
+import {
+  commentPostParamsSchema,
   createCommentBodySchema,
-  commentIdParamsSchema,updateCommentBodySchema } from "./comments.schema.js";
+  commentIdParamsSchema,
+  updateCommentBodySchema,
+} from "./comments.schema.js";
+import { HttpError } from "../../shared/http-error.js";
+
 export async function createComment(
   req: Request,
   res: Response
 ): Promise<void> {
-  const paramsResult = commentPostParamsSchema.safeParse(req.params);
-
-  if (!paramsResult.success) {
-    res.status(400).json({ ok: false, error: "invalid post id" });
-    return;
-  }
-
-  const bodyResult = createCommentBodySchema.safeParse(req.body);
-
-  if (!bodyResult.success) {
-    const firstIssue = bodyResult.error.issues[0];
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid request body",
-    });
-    return;
-  }
+  const { id: postId } = commentPostParamsSchema.parse(req.params);
+  const { content } = createCommentBodySchema.parse(req.body);
 
   if (!req.user?.id) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const { id: postId } = paramsResult.data;
-  const { content } = bodyResult.data;
   const authorId = req.user.id;
 
   const post = await PostModel.findById(postId).exec();
 
   if (!post) {
-    res.status(404).json({ ok: false, error: "post not found" });
-    return;
+    throw new HttpError(404, "post not found");
   }
 
   const createdComment = await CommentModel.create({
@@ -61,20 +47,12 @@ export async function getCommentsByPostId(
   req: Request,
   res: Response
 ): Promise<void> {
-  const paramsResult = commentPostParamsSchema.safeParse(req.params);
-
-  if (!paramsResult.success) {
-    res.status(400).json({ ok: false, error: "invalid post id" });
-    return;
-  }
-
-  const { id: postId } = paramsResult.data;
+  const { id: postId } = commentPostParamsSchema.parse(req.params);
 
   const post = await PostModel.findById(postId).exec();
 
   if (!post) {
-    res.status(404).json({ ok: false, error: "post not found" });
-    return;
+    throw new HttpError(404, "post not found");
   }
 
   const comments = await CommentModel.find({ postId })
@@ -90,43 +68,23 @@ export async function updateComment(
   req: Request,
   res: Response
 ): Promise<void> {
-  const paramsResult = commentIdParamsSchema.safeParse(req.params);
-
-  if (!paramsResult.success) {
-    res.status(400).json({ ok: false, error: "invalid comment id" });
-    return;
-  }
-
-  const bodyResult = updateCommentBodySchema.safeParse(req.body);
-
-  if (!bodyResult.success) {
-    const firstIssue = bodyResult.error.issues[0];
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid request body",
-    });
-    return;
-  }
+  const { id: commentId } = commentIdParamsSchema.parse(req.params);
+  const { content } = updateCommentBodySchema.parse(req.body);
 
   if (!req.user?.id) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const { id: commentId } = paramsResult.data;
-  const { content } = bodyResult.data;
   const currentUserId = req.user.id;
 
   const comment = await CommentModel.findById(commentId).exec();
 
   if (!comment) {
-    res.status(404).json({ ok: false, error: "comment not found" });
-    return;
+    throw new HttpError(404, "comment not found");
   }
 
   if (String(comment.authorId) !== currentUserId) {
-    res.status(403).json({ ok: false, error: "forbidden" });
-    return;
+    throw new HttpError(403, "forbidden");
   }
 
   comment.content = content;
@@ -144,31 +102,22 @@ export async function deleteComment(
   req: Request,
   res: Response
 ): Promise<void> {
-  const paramsResult = commentIdParamsSchema.safeParse(req.params);
-
-  if (!paramsResult.success) {
-    res.status(400).json({ ok: false, error: "invalid comment id" });
-    return;
-  }
+  const { id: commentId } = commentIdParamsSchema.parse(req.params);
 
   if (!req.user?.id) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const { id: commentId } = paramsResult.data;
   const currentUserId = req.user.id;
 
   const comment = await CommentModel.findById(commentId).exec();
 
   if (!comment) {
-    res.status(404).json({ ok: false, error: "comment not found" });
-    return;
+    throw new HttpError(404, "comment not found");
   }
 
   if (String(comment.authorId) !== currentUserId) {
-    res.status(403).json({ ok: false, error: "forbidden" });
-    return;
+    throw new HttpError(403, "forbidden");
   }
 
   await comment.deleteOne();

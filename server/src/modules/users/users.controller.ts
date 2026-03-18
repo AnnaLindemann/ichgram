@@ -1,29 +1,26 @@
 import type { Request, Response } from "express";
-import { UserModel } from "./users.model.js";
 import mongoose from "mongoose";
-import { toPublicUser } from "./users.type.js";
-import { updateMeSchema, searchUsersQuerySchema  } from "./users.schemas.js";
-import { toSearchUserDto } from "./users.type.js";
+import { UserModel } from "./users.model.js";
+import { toPublicUser, toSearchUserDto } from "./users.type.js";
+import { updateMeSchema, searchUsersQuerySchema } from "./users.schemas.js";
 import { escapeRegex } from "../../shared/escapeRegex.js";
+import { HttpError } from "../../shared/http-error.js";
 
 export async function getUserById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
   if (typeof id !== "string" || id.trim() === "") {
-    res.status(400).json({ ok: false, error: "id is required" });
-    return;
+    throw new HttpError(400, "id is required");
   }
 
   if (!mongoose.isValidObjectId(id)) {
-    res.status(400).json({ ok: false, error: "id is invalid" });
-    return;
+    throw new HttpError(400, "id is invalid");
   }
 
   const user = await UserModel.findById(id).exec();
 
   if (!user) {
-    res.status(404).json({ ok: false, error: "user not found" });
-    return;
+    throw new HttpError(404, "user not found");
   }
 
   res.status(200).json({
@@ -43,15 +40,13 @@ export async function listUsers(_req: Request, res: Response): Promise<void> {
 
 export async function getMe(req: Request, res: Response): Promise<void> {
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
   const user = await UserModel.findById(req.user.id).exec();
 
   if (!user) {
-    res.status(404).json({ ok: false, error: "user not found" });
-    return;
+    throw new HttpError(404, "user not found");
   }
 
   res.status(200).json({
@@ -62,29 +57,16 @@ export async function getMe(req: Request, res: Response): Promise<void> {
 
 export async function updateMe(req: Request, res: Response): Promise<void> {
   if (!req.user) {
-    res.status(401).json({ ok: false, error: "unauthorized" });
-    return;
+    throw new HttpError(401, "unauthorized");
   }
 
-  const parsed = updateMeSchema.safeParse(req.body);
-
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid request body",
-    });
-    return;
-  }
-
-  const { fullName, bio, avatarUrl } = parsed.data;
+  const parsed = updateMeSchema.parse(req.body);
+  const { fullName, bio, avatarUrl } = parsed;
 
   const user = await UserModel.findById(req.user.id).exec();
 
   if (!user) {
-    res.status(404).json({ ok: false, error: "user not found" });
-    return;
+    throw new HttpError(404, "user not found");
   }
 
   if (fullName !== undefined) {
@@ -108,18 +90,8 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
 }
 
 export async function searchUsers(req: Request, res: Response): Promise<void> {
-  const parsed = searchUsersQuerySchema.safeParse(req.query);
+  const { q, limit } = searchUsersQuerySchema.parse(req.query);
 
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-    res.status(400).json({
-      ok: false,
-      error: firstIssue?.message ?? "invalid query params",
-    });
-    return;
-  }
-
-  const { q, limit } = parsed.data;
   const escapedQuery = escapeRegex(q);
   const regex = new RegExp(escapedQuery, "i");
 
@@ -131,7 +103,7 @@ export async function searchUsers(req: Request, res: Response): Promise<void> {
       username: 1,
       fullName: 1,
       avatarUrl: 1,
-    },
+    }
   )
     .sort({ username: 1 })
     .limit(limit)
