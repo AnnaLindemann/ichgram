@@ -19,7 +19,6 @@ export function createApp(){
   app.use("/api/posts",postRouter)
   app.use("/api/auth", authRouter);
   app.use("/api/posts", commentsRouter);
-  app.use("/api", commentsRouter);
   
 app.get("/api/health", (_req, res) => {
   const state = mongoose.connection.readyState;
