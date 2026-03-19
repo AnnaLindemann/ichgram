@@ -34,9 +34,9 @@ export function signToken(user: AuthenticatedUser): string {
   })
 }
 
-export function verifyToken(tocken: string): JwtPayload {
+export function verifyToken(token: string): JwtPayload {
   const secret = getJwtSecret();
-  const decoded = jwt.verify(tocken,secret);
+  const decoded = jwt.verify(token,secret);
   if (typeof decoded !== "object" || decoded === null) {
     throw new Error("Invalid token payload")
   }

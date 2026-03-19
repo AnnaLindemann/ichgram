@@ -8,7 +8,7 @@ type PopulatedActor = {
   avatarUrl?: string | null;
 };
 
-type NotificationWithActor = NotificationDocument & {
+export type NotificationWithActor = NotificationDocument & {
   actorId: PopulatedActor;
 };
 

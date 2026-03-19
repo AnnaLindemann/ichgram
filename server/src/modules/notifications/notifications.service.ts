@@ -1,6 +1,11 @@
 import mongoose, { Types } from "mongoose";
 import { HttpError } from "../../shared/http-error.js";
 import { NotificationModel } from "./notifications.model.js";
+import { emitNewNotification } from "../../sockets/realtime.gateway.js";
+import {
+  toPublicNotification,
+  type NotificationWithActor,
+} from "./notifications.mapper.js";
 import type {
   NotificationEntityType,
   NotificationType,
@@ -30,6 +35,7 @@ function toObjectId(id: string): Types.ObjectId {
   return new Types.ObjectId(id);
 }
 
+
 export async function createNotification(
   input: CreateNotificationInput,
 ): Promise<void> {
@@ -37,7 +43,7 @@ export async function createNotification(
     return;
   }
 
-  await NotificationModel.create({
+  const created = await NotificationModel.create({
     recipientId: toObjectId(input.recipientId),
     actorId: toObjectId(input.actorId),
     type: input.type,
@@ -49,6 +55,20 @@ export async function createNotification(
       : null,
     isRead: false,
     readAt: null,
+  });
+
+  const populatedNotification = await NotificationModel.findById(created._id)
+    .populate("actorId", "username fullName avatarUrl")
+    .exec();
+
+  if (!populatedNotification) {
+    return;
+  }
+
+  emitNewNotification(input.recipientId, {
+    notification: toPublicNotification(
+      populatedNotification as unknown as NotificationWithActor,
+    ),
   });
 }
 
@@ -72,7 +92,9 @@ export async function listNotifications(input: ListNotificationsInput) {
 
   const hasMore = notifications.length > input.limit;
   const items = hasMore ? notifications.slice(0, input.limit) : notifications;
-  const nextCursor = hasMore ? items[items.length - 1]?._id.toString() ?? null : null;
+  const nextCursor = hasMore
+    ? items[items.length - 1]?._id.toString() ?? null
+    : null;
 
   return {
     items,

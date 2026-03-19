@@ -5,6 +5,11 @@ import { ConversationModel } from "./conversation.model.js";
 import { MessageModel } from "./message.model.js";
 import { createNotification } from "../notifications/notifications.service.js";
 import {
+  emitNewMessage,
+  emitMessageDeleted,
+  emitMessagesRead,
+} from "../../sockets/realtime.gateway.js";
+import {
   buildDirectConversationPairKey,
   toConversationDto,
   toMessageDto,
@@ -46,7 +51,6 @@ async function ensureUserExists(userId: Types.ObjectId): Promise<void> {
     throw new HttpError(404, "User not found");
   }
 }
-
 
 async function findConversationForParticipantOrThrow(
   conversationId: string,
@@ -264,6 +268,13 @@ export async function sendMessageToConversation(
     },
   ).exec();
 
+  const messageDto = toMessageDto(message);
+
+  emitNewMessage(conversation._id.toString(), {
+    conversationId: conversation._id.toString(),
+    message: messageDto,
+  });
+
   const recipientId = getOtherParticipantId(
     conversation.participants.map(
       (participant) => new Types.ObjectId(participant._id),
@@ -284,7 +295,7 @@ export async function sendMessageToConversation(
     console.error("Failed to create message notification", error);
   }
 
-  return toMessageDto(message);
+  return messageDto;
 }
 
 export async function deleteOwnMessage(
@@ -316,6 +327,11 @@ export async function deleteOwnMessage(
   message.text = "[deleted message]";
 
   await message.save();
+
+  emitMessageDeleted(message.conversationId.toString(), {
+    conversationId: message.conversationId.toString(),
+    messageId: message._id.toString(),
+  });
 
   return toMessageDto(message);
 }
@@ -353,6 +369,13 @@ export async function markConversationMessagesAsRead(
       },
     },
   ).exec();
+
+  if (result.modifiedCount > 0) {
+    emitMessagesRead(conversation._id.toString(), {
+      conversationId: conversation._id.toString(),
+      readerId: currentUserId,
+    });
+  }
 
   return {
     updatedCount: result.modifiedCount,
