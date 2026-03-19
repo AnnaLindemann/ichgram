@@ -3,6 +3,7 @@ import { HttpError } from "../../shared/http-error.js";
 import { UserModel } from "../users/users.model.js";
 import { ConversationModel } from "./conversation.model.js";
 import { MessageModel } from "./message.model.js";
+import { createNotification } from "../notifications/notifications.service.js";
 import {
   buildDirectConversationPairKey,
   toConversationDto,
@@ -27,7 +28,10 @@ function calculatePagination(page: number, limit: number): { skip: number } {
   };
 }
 
-async function ensureValidObjectId(id: string, fieldName: string): Promise<Types.ObjectId> {
+async function ensureValidObjectId(
+  id: string,
+  fieldName: string,
+): Promise<Types.ObjectId> {
   if (!mongoose.isValidObjectId(id)) {
     throw new HttpError(400, `${fieldName} is invalid`);
   }
@@ -43,12 +47,19 @@ async function ensureUserExists(userId: Types.ObjectId): Promise<void> {
   }
 }
 
+
 async function findConversationForParticipantOrThrow(
   conversationId: string,
   currentUserId: string,
-) {
-  const conversationObjectId = await ensureValidObjectId(conversationId, "conversationId");
-  const currentUserObjectId = await ensureValidObjectId(currentUserId, "currentUserId");
+): Promise<PopulatedConversationDocument> {
+  const conversationObjectId = await ensureValidObjectId(
+    conversationId,
+    "conversationId",
+  );
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
 
   const conversation = await ConversationModel.findOne({
     _id: conversationObjectId,
@@ -61,7 +72,7 @@ async function findConversationForParticipantOrThrow(
     throw new HttpError(404, "Conversation not found");
   }
 
-  return conversation;
+  return asPopulatedConversationDocument(conversation);
 }
 
 function getOtherParticipantId(
@@ -89,8 +100,14 @@ export async function createOrGetDirectConversation(
   currentUserId: string,
   participantId: string,
 ): Promise<ConversationDto> {
-  const currentUserObjectId = await ensureValidObjectId(currentUserId, "currentUserId");
-  const participantObjectId = await ensureValidObjectId(participantId, "participantId");
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
+  const participantObjectId = await ensureValidObjectId(
+    participantId,
+    "participantId",
+  );
 
   if (currentUserObjectId.toString() === participantObjectId.toString()) {
     throw new HttpError(400, "Cannot create conversation with yourself");
@@ -99,7 +116,10 @@ export async function createOrGetDirectConversation(
   await ensureUserExists(currentUserObjectId);
   await ensureUserExists(participantObjectId);
 
-  const pairKey = buildDirectConversationPairKey(currentUserObjectId, participantObjectId);
+  const pairKey = buildDirectConversationPairKey(
+    currentUserObjectId,
+    participantObjectId,
+  );
 
   let conversation = await ConversationModel.findOne({ pairKey })
     .populate("participants", "username fullName avatarUrl")
@@ -138,14 +158,17 @@ export async function createOrGetDirectConversation(
     throw new HttpError(500, "Conversation creation failed");
   }
 
-    return toConversationDto(asPopulatedConversationDocument(conversation));
+  return toConversationDto(asPopulatedConversationDocument(conversation));
 }
 
 export async function listMyConversations(
   currentUserId: string,
   pagination: PaginationInput,
 ): Promise<PaginatedConversationsDto> {
-  const currentUserObjectId = await ensureValidObjectId(currentUserId, "currentUserId");
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
   const { page, limit } = pagination;
   const { skip } = calculatePagination(page, limit);
 
@@ -161,7 +184,7 @@ export async function listMyConversations(
 
   return {
     items: items.map((conversation) =>
-    toConversationDto(asPopulatedConversationDocument(conversation)),
+      toConversationDto(asPopulatedConversationDocument(conversation)),
     ),
     page,
     limit,
@@ -211,7 +234,11 @@ export async function sendMessageToConversation(
     currentUserId,
   );
 
-  const currentUserObjectId = await ensureValidObjectId(currentUserId, "currentUserId");
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
+
   const trimmedText = text.trim();
 
   if (!trimmedText) {
@@ -237,6 +264,26 @@ export async function sendMessageToConversation(
     },
   ).exec();
 
+  const recipientId = getOtherParticipantId(
+    conversation.participants.map(
+      (participant) => new Types.ObjectId(participant._id),
+    ),
+    currentUserId,
+  );
+
+  try {
+    await createNotification({
+      recipientId: recipientId.toString(),
+      actorId: currentUserId,
+      type: "message",
+      entityType: "message",
+      entityId: message._id.toString(),
+      conversationId: conversation._id.toString(),
+    });
+  } catch (error: unknown) {
+    console.error("Failed to create message notification", error);
+  }
+
   return toMessageDto(message);
 }
 
@@ -245,7 +292,10 @@ export async function deleteOwnMessage(
   currentUserId: string,
 ): Promise<MessageDto> {
   const messageObjectId = await ensureValidObjectId(messageId, "messageId");
-  const currentUserObjectId = await ensureValidObjectId(currentUserId, "currentUserId");
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
 
   const message = await MessageModel.findById(messageObjectId).exec();
 
@@ -279,10 +329,15 @@ export async function markConversationMessagesAsRead(
     currentUserId,
   );
 
-  const currentUserObjectId = await ensureValidObjectId(currentUserId, "currentUserId");
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
 
   const otherParticipantId = getOtherParticipantId(
-    conversation.participants.map((participant) => new Types.ObjectId(participant._id)),
+    conversation.participants.map(
+      (participant) => new Types.ObjectId(participant._id),
+    ),
     currentUserId,
   );
 

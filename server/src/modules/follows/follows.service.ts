@@ -3,6 +3,7 @@ import { HttpError } from "../../shared/http-error.js";
 import { UserModel } from "../users/users.model.js";
 import { toPublicUser } from "../users/users.type.js";
 import { FollowModel } from "./follows.model.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 interface FollowListOptions {
   page: number;
@@ -11,7 +12,7 @@ interface FollowListOptions {
 
 export async function followUser(
   currentUserId: string,
-  targetUserId: string
+  targetUserId: string,
 ) {
   if (!mongoose.isValidObjectId(targetUserId)) {
     throw new HttpError(400, "id is invalid");
@@ -42,6 +43,14 @@ export async function followUser(
       followingId: targetUserId,
     });
 
+    await createNotification({
+      recipientId: targetUserId,
+      actorId: currentUserId,
+      type: "follow",
+      entityType: "follow",
+      entityId: createdFollow._id.toString(),
+    });
+
     return {
       id: createdFollow._id.toString(),
       followerId: createdFollow.followerId.toString(),
@@ -63,7 +72,6 @@ export async function followUser(
     throw error;
   }
 }
-
 export async function unfollowUser(
   currentUserId: string,
   targetUserId: string

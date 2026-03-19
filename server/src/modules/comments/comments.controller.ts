@@ -9,6 +9,7 @@ import {
   updateCommentBodySchema,
 } from "./comments.schema.js";
 import { HttpError } from "../../shared/http-error.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 export async function createComment(
   req: Request,
@@ -34,7 +35,14 @@ export async function createComment(
     authorId,
     content,
   });
-
+  await createNotification({
+       recipientId: post.author.toString(),
+       actorId: authorId,
+       type: "comment",
+       entityType: "comment",
+       entityId: createdComment._id.toString(),
+       postId: post._id.toString(),
+     });
   const publicComment = toPublicComment(createdComment);
 
   res.status(201).json({

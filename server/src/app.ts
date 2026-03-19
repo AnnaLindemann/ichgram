@@ -9,7 +9,7 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { commentsRouter } from "./modules/comments/comments.routes.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
-
+import { notificationsRouter } from "./modules/notifications/notifications.routes.js";
 export function createApp(){
   const app = express();
   app.use(helmet());
@@ -21,6 +21,7 @@ export function createApp(){
   app.use("/api/auth", authRouter);
   app.use("/api/posts", commentsRouter);
   app.use("/api/chat", chatRouter);
+  app.use("/api/notifications", notificationsRouter);
   
 app.get("/api/health", (_req, res) => {
   const state = mongoose.connection.readyState;

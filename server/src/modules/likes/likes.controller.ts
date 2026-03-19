@@ -5,6 +5,7 @@ import { LikeModel } from "./likes.model.js";
 import { PostModel } from "../posts/posts.model.js";
 import { likePostParamsSchema } from "./likes.schemas.js";
 import { HttpError } from "../../shared/http-error.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 function isMongoDuplicateKeyError(error: unknown): error is { code: number } {
   return typeof error === "object" && error !== null && "code" in error;
@@ -22,16 +23,25 @@ export async function likePost(req: Request, res: Response): Promise<void> {
     throw new HttpError(401, "authenticated user id is invalid");
   }
 
-  const postExists = await PostModel.exists({ _id: postId });
+  const post = await PostModel.findById(postId).exec();
 
-  if (!postExists) {
+  if (!post) {
     throw new HttpError(404, "post not found");
   }
 
   try {
-    await LikeModel.create({
+    const createdLike = await LikeModel.create({
       postId: new mongoose.Types.ObjectId(postId),
       userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    await createNotification({
+      recipientId: post.author.toString(),
+      actorId: userId,
+      type: "like",
+      entityType: "like",
+      entityId: createdLike._id.toString(),
+      postId: post._id.toString(),
     });
   } catch (error: unknown) {
     if (error instanceof mongoose.Error.ValidationError) {
