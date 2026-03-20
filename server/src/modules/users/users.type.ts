@@ -10,6 +10,8 @@ export type UserDb = {
   bio: string;
   avatarUrl: string;
   role: UserRole;
+  resetPasswordToken: string | null;
+  resetPasswordExpires: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

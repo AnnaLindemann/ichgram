@@ -1,65 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { registerUser } from "@/features/auth/api/register";
+import {
+  registerSchema,
+  type RegisterFormValues,
+} from "@/features/auth/schemas/register.schema";
 import { setAuthSession } from "@/lib/auth-storage";
 import logo from "../assets/icons/Logo.svg";
-
-const registerSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "Email is required")
-    .email("Email is invalid")
-    .transform((value) => value.toLowerCase()),
-
-  fullName: z
-    .string()
-    .trim()
-    .min(1, "Full name is required"),
-
-  username: z
-    .string()
-    .trim()
-    .min(1, "Username is required")
-    .transform((value) => value.toLowerCase()),
-
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters long"),
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
-
-type AuthUser = {
-  id: string;
-  username: string;
-  email: string;
-  fullName: string;
-  role: string;
-  bio: string;
-  avatarUrl: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type RegisterSuccessResponse = {
-  ok: true;
-  data: {
-    token: string;
-    user: AuthUser;
-  };
-};
-
-type RegisterErrorResponse = {
-  ok?: false;
-  message?: string;
-  fieldErrors?: Partial<Record<keyof RegisterFormValues, string>>;
-};
-
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -86,16 +36,7 @@ export default function RegisterPage() {
     clearErrors();
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
-
-      const data: RegisterSuccessResponse | RegisterErrorResponse =
-        await response.json();
+      const { response, data } = await registerUser(values);
 
       if (!response.ok) {
         if ("fieldErrors" in data && data.fieldErrors) {
@@ -117,13 +58,13 @@ export default function RegisterPage() {
           Object.keys(data.fieldErrors).length > 0;
 
         if (!hasFieldErrors) {
-  const message =
-    "message" in data && typeof data.message === "string"
-      ? data.message
-      : "Registration failed";
+          const message =
+            "message" in data && typeof data.message === "string"
+              ? data.message
+              : "Registration failed";
 
-  setServerError(message);
-}
+          setServerError(message);
+        }
 
         return;
       }
@@ -147,7 +88,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-[#fafafa] px-4 py-8 sm:px-6">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full items-center justify-center">
-        <section className="w-full max-w-[430px]">
+        <section className="mt-[-20px] w-full max-w-[430px] sm:mt-[-28px]">
           <div className="border border-[#dbdbdb] bg-white px-8 pb-6 pt-8 sm:px-10 sm:pb-7 sm:pt-9">
             <div className="mb-5 flex justify-center">
               <img
@@ -244,15 +185,15 @@ export default function RegisterPage() {
                 .
               </p>
 
-              <div className="pt-4 pb-2">
-  <button
-    type="submit"
-    disabled={isSubmitting}
-    className="h-10 w-full rounded-[8px] bg-[#0095f6] text-sm font-semibold text-white transition hover:bg-[#1877f2] disabled:cursor-not-allowed disabled:opacity-70"
-  >
-    {isSubmitting ? "Signing up..." : "Sign up"}
-  </button>
-</div>
+              <div className="pb-2 pt-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-[8px] bg-[#0095f6] text-sm font-semibold text-white transition hover:bg-[#1877f2] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSubmitting ? "Signing up..." : "Sign up"}
+                </button>
+              </div>
             </form>
           </div>
 

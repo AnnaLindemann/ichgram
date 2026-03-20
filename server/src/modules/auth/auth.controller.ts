@@ -2,12 +2,16 @@ import type { Request, Response } from "express";
 import { UserModel } from "../users/users.model.js";
 import { toPublicUser } from "../users/users.type.js";
 import { signToken } from "../../shared/jwt.helper.js";
-import { loginSchema, registerSchema } from "./auth.validation.js";
+import { loginSchema, registerSchema } from "./auth.schemas.js";
 import {
   comparePassword,
   hashPassword,
 } from "../../shared/password.helper.js";
 import { HttpError } from "../../shared/http-error.js";
+import { forgotPasswordSchema } from "./auth.schemas.js";
+import { forgotPasswordService } from "./auth.service.js";
+import { resetPasswordSchema } from "./auth.schemas.js";
+import { resetPasswordService } from "./auth.service.js";
 
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, fullName, password } = registerSchema.parse(req.body);
@@ -84,4 +88,39 @@ export async function login(req: Request, res: Response): Promise<void> {
   });
 
   res.status(200).json({ ok: true, data: { token, user: toPublicUser(existingUser) } });
+}
+
+export async function forgotPasswordController(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const { identifier } = forgotPasswordSchema.parse(req.body);
+
+  const result = await forgotPasswordService(identifier);
+
+  res.status(200).json({
+    ok: true,
+    message: "If account exists, password reset instructions were sent",
+    ...(result.resetToken
+      ? {
+          data: {
+            resetToken: result.resetToken,
+          },
+        }
+      : {}),
+  });
+}
+
+export async function resetPasswordController(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const { token, password } = resetPasswordSchema.parse(req.body);
+
+  await resetPasswordService(token, password);
+
+  res.status(200).json({
+    ok: true,
+    message: "Password successfully reset",
+  });
 }

@@ -38,3 +38,26 @@ export const loginSchema = z.object({
 })
 
 export type LoginSchemaInput = z.infer<typeof loginSchema>
+
+export const forgotPasswordSchema = z.object({
+  identifier: z
+    .string()
+    .trim()
+    .min(3, "identifier must be at least 3 characters")
+    .max(100, "identifier must be at most 100 characters"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .min(1, "token is required"),
+
+  password: z
+    .string()
+    .min(8, "password must be at least 8 characters")
+    .max(100, "password must be at most 100 characters"),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
