@@ -9,11 +9,20 @@ export function errorMiddleware(
   _next: NextFunction
 ): void {
   if (err instanceof ZodError) {
-    const firstIssue = err.issues[0];
+    const fieldErrors: Record<string, string> = {};
+
+    for (const issue of err.issues) {
+      const fieldName = issue.path[0];
+
+      if (typeof fieldName === "string" && !fieldErrors[fieldName]) {
+        fieldErrors[fieldName] = issue.message;
+      }
+    }
 
     res.status(400).json({
       ok: false,
-      error: firstIssue?.message ?? "validation error",
+      message: "Validation failed",
+      fieldErrors,
     });
     return;
   }
@@ -21,7 +30,8 @@ export function errorMiddleware(
   if (err instanceof HttpError) {
     res.status(err.statusCode).json({
       ok: false,
-      error: err.message,
+      message: err.message,
+      fieldErrors: err.fieldErrors,
     });
     return;
   }
@@ -29,13 +39,13 @@ export function errorMiddleware(
   if (err instanceof Error) {
     res.status(500).json({
       ok: false,
-      error: err.message || "internal error",
+      message: err.message || "Internal error",
     });
     return;
   }
 
   res.status(500).json({
     ok: false,
-    error: "internal error",
+    message: "Internal error",
   });
 }

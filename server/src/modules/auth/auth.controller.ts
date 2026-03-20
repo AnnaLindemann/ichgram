@@ -12,18 +12,33 @@ import { HttpError } from "../../shared/http-error.js";
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, fullName, password } = registerSchema.parse(req.body);
 
-  const existingUser = await UserModel.findOne({
-    $or: [{ email }, { username }],
-  }).exec();
+  const [existingEmailUser, existingUsernameUser] = await Promise.all([
+    UserModel.findOne({ email }).select("_id").lean().exec(),
+    UserModel.findOne({ username }).select("_id").lean().exec(),
+  ]);
 
-  if (existingUser) {
-    throw new HttpError(409, "User with this email or username already exists");
+  const fieldErrors: Record<string, string> = {};
+
+  if (existingEmailUser) {
+    fieldErrors.email = "The email is already taken";
+  }
+
+  if (existingUsernameUser) {
+    fieldErrors.username = "The username is already taken";
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new HttpError(409, "Validation failed", fieldErrors);
   }
 
   const passwordHash = await hashPassword(password);
 
   const createdUser = await UserModel.create({
-    username, email, fullName, passwordHash, role: "user",
+    username,
+    email,
+    fullName,
+    passwordHash,
+    role: "user",
   });
 
   const token = signToken({
@@ -33,7 +48,13 @@ export async function register(req: Request, res: Response): Promise<void> {
     role: createdUser.role,
   });
 
-  res.status(201).json({ ok: true, data: { token, user: toPublicUser(createdUser) } });
+  res.status(201).json({
+    ok: true,
+    data: {
+      token,
+      user: toPublicUser(createdUser),
+    },
+  });
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
