@@ -4,7 +4,6 @@ import AppLayout from "./layouts/AppLayout";
 
 import NotFoundPage from "./pages/NotFoundPage";
 import FeedPage from "./pages/FeedPage";
-import SearchPage from "./pages/SearchPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
 import MessagesPage from "./pages/MessagesPage";
@@ -24,7 +23,6 @@ export default function App() {
 
       <Route element={<AppLayout />}>
         <Route path="/" element={<FeedPage />} />
-        <Route path="/search" element={<SearchPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/messages" element={<MessagesPage />} />

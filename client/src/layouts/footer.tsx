@@ -29,40 +29,41 @@ export function Footer(): React.ReactElement {
   const [active, setActive] = React.useState<FooterKey>("home");
 
   return (
-    <footer className="w-full">
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
-        {/* Links row */}
-        <nav aria-label="Footer" className="flex flex-wrap justify-center gap-x-8 gap-y-3">
-          {ITEMS.map((item) => (
-            <Button
-              key={item.key}
-              type="button"
-              variant="link"
-              className="h-auto p-0 text-xs font-normal text-muted-foreground hover:text-foreground no-underline"
-              onClick={() => {
-                setActive(item.key);
-                setOpen(true);
-              }}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </nav>
+  <footer className="w-full">
+  <div className="mx-auto w-full max-w-5xl px-4 py-10">
+    <nav
+      aria-label="Footer"
+      className="mx-auto grid w-full max-w-[560px] grid-cols-6 items-center text-center"
+    >
+      {ITEMS.map((item) => (
+        <Button
+          key={item.key}
+          type="button"
+          variant="link"
+          className="h-auto justify-center p-0 text-xs font-normal text-muted-foreground hover:text-foreground no-underline"
+          onClick={() => {
+            setActive(item.key);
+            setOpen(true);
+          }}
+        >
+          {item.label}
+        </Button>
+      ))}
+    </nav>
 
-        {/* Copyright */}
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} ICHgram
-        </p>
+    <p className="mt-8 text-center text-xs text-muted-foreground">
+      © {new Date().getFullYear()} ICHgram
+    </p>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{titleFor(active)}</DialogTitle>
-              <DialogDescription>Coming soon.</DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </footer>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{titleFor(active)}</DialogTitle>
+          <DialogDescription>Coming soon.</DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  </div>
+</footer>
   );
 }

@@ -1,19 +1,26 @@
 import { NavLink } from "react-router-dom";
-import { navItems } from "./navItems";
+import { navItems, type NavItem } from "./navItems";
 
 function cn(...v: Array<string | false | undefined>) {
   return v.filter(Boolean).join(" ");
 }
 
+type RouteNavItem = NavItem & {
+  kind: "route";
+  to: string;
+};
+
+function isMobileRouteItem(item: NavItem): item is RouteNavItem {
+  return item.showInMobileBottom !== false && item.kind === "route" && typeof item.to === "string";
+}
+
 export function MobileBottomNav() {
-  const items = navItems
-    .filter((x) => x.showInMobileBottom !== false)
-    .slice(0, 5);
+  const items = navItems.filter(isMobileRouteItem).slice(0, 5);
 
   return (
     <nav
       className={cn(
-        "lg:hidden fixed bottom-0 left-0 right-0 z-50",
+        "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
         "border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70"
       )}
       aria-label="Bottom navigation"
@@ -24,7 +31,7 @@ export function MobileBottomNav() {
 
           return (
             <NavLink
-              key={item.to}
+              key={item.id}
               to={item.to}
               className={({ isActive }) =>
                 cn(

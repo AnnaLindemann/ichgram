@@ -84,17 +84,21 @@ function UserFilledIcon({ className }: { className?: string }) {
 }
 
 export type NavItem = {
+  id: string;
   label: string;
-  to: string;
   icon: IconComponent;
   activeIcon?: IconComponent;
+  kind: "route" | "action";
+  to?: string;
   showInSidebar?: boolean;
   showInMobileBottom?: boolean;
 };
 
 export const navItems: NavItem[] = [
   {
+    id: "home",
     label: "Home",
+    kind: "route",
     to: "/",
     icon: Home,
     activeIcon: HomeFilledIcon,
@@ -102,15 +106,18 @@ export const navItems: NavItem[] = [
     showInMobileBottom: true,
   },
   {
+    id: "search",
     label: "Search",
-    to: "/search",
+    kind: "action",
     icon: Search,
     activeIcon: SearchFilledIcon,
     showInSidebar: true,
-    showInMobileBottom: true,
+    showInMobileBottom: false,
   },
   {
+    id: "explore",
     label: "Explore",
+    kind: "route",
     to: "/explore",
     icon: Compass,
     activeIcon: CompassFilledIcon,
@@ -118,7 +125,9 @@ export const navItems: NavItem[] = [
     showInMobileBottom: true,
   },
   {
+    id: "messages",
     label: "Messages",
+    kind: "route",
     to: "/messages",
     icon: MessageCircle,
     activeIcon: MessagesFilledIcon,
@@ -126,7 +135,9 @@ export const navItems: NavItem[] = [
     showInMobileBottom: true,
   },
   {
+    id: "notifications",
     label: "Notifications",
+    kind: "route",
     to: "/notifications",
     icon: Heart,
     activeIcon: HeartFilledIcon,
@@ -134,14 +145,18 @@ export const navItems: NavItem[] = [
     showInMobileBottom: true,
   },
   {
+    id: "create",
     label: "Create",
+    kind: "route",
     to: "/create",
     icon: PlusSquare,
     showInSidebar: true,
     showInMobileBottom: true,
   },
   {
+    id: "profile",
     label: "Profile",
+    kind: "route",
     to: "/profile",
     icon: User,
     activeIcon: UserFilledIcon,
