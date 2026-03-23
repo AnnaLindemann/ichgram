@@ -11,6 +11,7 @@ import CreatePostPage from "./pages/CreatePostPage";
 import RegisterPage from "./pages/RegisterPage";
 import TroubleLoggingInPage from "./pages/TroubleLoggingInPage";
 import LoginPage from "./pages/LoginPage";
+import PostDetailsPage from "./pages/PostDetailsPage";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/create" element={<CreatePostPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:id" element={<ProfilePage />} />
+        <Route path="/posts/:id" element={<PostDetailsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
