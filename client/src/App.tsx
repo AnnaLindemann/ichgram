@@ -12,15 +12,15 @@ import ExplorePage from "./pages/ExplorePage";
 import CreatePostPage from "./pages/CreatePostPage";
 import RegisterPage from "./pages/RegisterPage";
 import TroubleLoggingInPage from "./pages/TroubleLoggingInPage";
+import LoginPage from "./pages/LoginPage";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/register" element={<RegisterPage />} />
-      <Route
-        path="/trouble-logging-in"
-        element={<TroubleLoggingInPage />}
+      <Route path="/trouble-logging-in" element={<TroubleLoggingInPage />}
       />
+      <Route path="/login" element={<LoginPage/>}/>
 
       <Route element={<AppLayout />}>
         <Route path="/" element={<FeedPage />} />

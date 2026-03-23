@@ -107,6 +107,7 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   placeholder="Email"
+                  autoComplete="email"
                   {...register("email")}
                   className="h-10 w-full rounded-[3px] border border-[#dbdbdb] bg-[#fafafa] px-3 text-[13px] text-black outline-none placeholder:text-[#8e8e8e]"
                 />
@@ -121,6 +122,7 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   placeholder="Full Name"
+                  autoComplete="name" 
                   {...register("fullName")}
                   className="h-10 w-full rounded-[3px] border border-[#dbdbdb] bg-[#fafafa] px-3 text-[13px] text-black outline-none placeholder:text-[#8e8e8e]"
                 />
@@ -135,6 +137,7 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   placeholder="Username"
+                  autoComplete="username"
                   {...register("username")}
                   className="h-10 w-full rounded-[3px] border border-[#dbdbdb] bg-[#fafafa] px-3 text-[13px] text-black outline-none placeholder:text-[#8e8e8e]"
                 />
@@ -149,6 +152,7 @@ export default function RegisterPage() {
                 <input
                   type="password"
                   placeholder="Password"
+                  autoComplete="new-password" 
                   {...register("password")}
                   className="h-10 w-full rounded-[3px] border border-[#dbdbdb] bg-[#fafafa] px-3 text-[13px] text-black outline-none placeholder:text-[#8e8e8e]"
                 />
