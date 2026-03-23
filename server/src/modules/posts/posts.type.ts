@@ -4,15 +4,23 @@ export type CreatePostInput = {
   caption: string;
 };
 
+export type PostAuthorDto = {
+  id: string;
+  username: string;
+  fullName: string;
+  avatarUrl: string | null;
+};
+
 export type PostDto = {
   id: string;
-  authorId: string;
   caption: string;
   imageUrl: string;
   createdAt: string;
   updatedAt: string;
   likesCount: number;
   likedByMe: boolean;
+  commentsCount: number;
+  author: PostAuthorDto;
 };
 
 export type CreatePostResponse = {

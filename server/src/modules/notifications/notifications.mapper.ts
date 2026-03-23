@@ -1,19 +1,57 @@
 import type { NotificationDocument } from "./notifications.model.js";
 import type { PublicNotification } from "./notifications.types.js";
 
+type ObjectIdLike = {
+  toString(): string;
+};
+
 type PopulatedActor = {
-  _id: { toString(): string };
+  _id: ObjectIdLike;
   username?: string;
   fullName?: string | null;
   avatarUrl?: string | null;
 };
 
-export type NotificationWithActor = NotificationDocument & {
-  actorId: PopulatedActor;
+type PopulatedPost = {
+  _id: ObjectIdLike;
+  imageUrl?: string | null;
 };
 
+export type NotificationWithActorAndPost = NotificationDocument & {
+  actorId: PopulatedActor;
+  postId: ObjectIdLike | PopulatedPost | null;
+};
+
+function getPostId(
+  post: NotificationWithActorAndPost["postId"],
+): string | null {
+  if (!post) {
+    return null;
+  }
+
+  if (typeof post === "object" && "_id" in post) {
+    return post._id.toString();
+  }
+
+  return String(post);
+}
+
+function getPostPreviewImageUrl(
+  post: NotificationWithActorAndPost["postId"],
+): string | null {
+  if (!post) {
+    return null;
+  }
+
+  if (typeof post === "object" && "imageUrl" in post) {
+    return post.imageUrl ?? null;
+  }
+
+  return null;
+}
+
 export function toPublicNotification(
-  notification: NotificationWithActor,
+  notification: NotificationWithActorAndPost,
 ): PublicNotification {
   return {
     id: notification._id.toString(),
@@ -27,7 +65,8 @@ export function toPublicNotification(
       fullName: notification.actorId.fullName ?? null,
       avatarUrl: notification.actorId.avatarUrl ?? null,
     },
-    postId: notification.postId ? notification.postId.toString() : null,
+    postId: getPostId(notification.postId),
+    postPreviewImageUrl: getPostPreviewImageUrl(notification.postId),
     conversationId: notification.conversationId
       ? notification.conversationId.toString()
       : null,

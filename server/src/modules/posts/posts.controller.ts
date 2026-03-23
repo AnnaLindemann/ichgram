@@ -10,6 +10,8 @@ import {
 } from "./posts.schemas.js";
 import { getLikesMetaForPosts } from "../likes/likes.service.js";
 import { HttpError } from "../../shared/http-error.js";
+import { getCommentsCountForPosts } from "../comments/comments.service.js";
+import { buildPostDto } from "./posts.mapper.js";
 
 export async function createPost(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -37,27 +39,31 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     caption: caption ?? "",
   };
 
-  const created = await PostModel.create({
-    author: new Types.ObjectId(input.authorId),
-    imageUrl: input.imageUrl,
-    caption: input.caption,
-  });
+const created = await PostModel.create({
+  author: new Types.ObjectId(input.authorId),
+  imageUrl: input.imageUrl,
+  caption: input.caption,
+});
 
-  const dto: PostDto = {
-    id: created._id.toString(),
-    authorId: created.author.toString(),
-    caption: created.caption,
-    imageUrl: created.imageUrl,
-    createdAt: created.createdAt.toISOString(),
-    updatedAt: created.updatedAt.toISOString(),
-    likesCount: 0,
-    likedByMe: false,
-  };
+const populatedPost = await PostModel.findById(created._id)
+  .populate("author", "username fullName avatarUrl")
+  .exec();
 
-  res.status(201).json({
-    ok: true,
-    data: dto,
-  });
+if (!populatedPost) {
+  throw new HttpError(404, "created post not found");
+}
+
+const data = buildPostDto({
+  post: populatedPost,
+  likesCount: 0,
+  likedByMe: false,
+  commentsCount: 0,
+});
+
+res.status(201).json({
+  ok: true,
+  data,
+});
 }
 
 export async function getPostById(req: Request, res: Response): Promise<void> {
@@ -71,28 +77,32 @@ export async function getPostById(req: Request, res: Response): Promise<void> {
     throw new HttpError(400, "post is invalid");
   }
 
-  const post = await PostModel.findById(id).exec();
+  const post = await PostModel.findById(id)
+  .populate("author", "username fullName avatarUrl")
+  .exec();
 
-  if (!post) {
-    throw new HttpError(404, "post not found");
-  }
+if (!post) {
+  throw new HttpError(404, "post not found");
+}
 
-  const viewerId = req.user?.id;
-  const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
-  const meta = likesMeta[String(post._id)];
+const viewerId = req.user?.id;
+const postId = String(post._id);
 
-  const data: PostDto = {
-    id: post._id.toString(),
-    authorId: post.author.toString(),
-    imageUrl: post.imageUrl,
-    caption: post.caption,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
-    likesCount: meta?.likesCount ?? 0,
-    likedByMe: meta?.likedByMe ?? false,
-  };
+const [likesMeta, commentsMeta] = await Promise.all([
+  getLikesMetaForPosts([postId], viewerId),
+  getCommentsCountForPosts([postId]),
+]);
 
-  res.status(200).json({ ok: true, data });
+const likeMeta = likesMeta[postId];
+
+const data = buildPostDto({
+  post,
+  likesCount: likeMeta?.likesCount ?? 0,
+  likedByMe: likeMeta?.likedByMe ?? false,
+  commentsCount: commentsMeta[postId] ?? 0,
+});
+
+res.status(200).json({ ok: true, data });
 }
 
 export async function listPosts(req: Request, res: Response): Promise<void> {
@@ -111,34 +121,36 @@ export async function listPosts(req: Request, res: Response): Promise<void> {
   const skip = (page - 1) * limit;
   const sortDirection = order === "asc" ? 1 : -1;
 
-  const [posts, total] = await Promise.all([
-    PostModel.find(filter)
-      .sort({ [sort]: sortDirection })
-      .skip(skip)
-      .limit(limit)
-      .exec(),
-    PostModel.countDocuments(filter).exec(),
-  ]);
+const [posts, total] = await Promise.all([
+  PostModel.find(filter)
+    .populate("author", "username fullName avatarUrl")
+    .sort({ [sort]: sortDirection })
+    .skip(skip)
+    .limit(limit)
+    .exec(),
+  PostModel.countDocuments(filter).exec(),
+]);
 
-  const postIds = posts.map((post) => String(post._id));
-  const viewerId = req.user?.id;
-  const likesMeta = await getLikesMetaForPosts(postIds, viewerId);
+const postIds = posts.map((post) => String(post._id));
+const viewerId = req.user?.id;
 
-  const data: PostDto[] = posts.map((p) => {
-    const postId = p._id.toString();
-    const meta = likesMeta[postId];
+const [likesMeta, commentsMeta] = await Promise.all([
+  getLikesMetaForPosts(postIds, viewerId),
+  getCommentsCountForPosts(postIds),
+]);
 
-    return {
-      id: postId,
-      authorId: p.author.toString(),
-      imageUrl: p.imageUrl,
-      caption: p.caption,
-      createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString(),
-      likesCount: meta?.likesCount ?? 0,
-      likedByMe: meta?.likedByMe ?? false,
-    };
+const data: PostDto[] = posts.map((post) => {
+  const postId = post._id.toString();
+  const likeMeta = likesMeta[postId];
+
+  return buildPostDto({
+    post,
+    likesCount: likeMeta?.likesCount ?? 0,
+    likedByMe: likeMeta?.likedByMe ?? false,
+    commentsCount: commentsMeta[postId] ?? 0,
   });
+});
+
 
   const pages = total === 0 ? 0 : Math.ceil(total / limit);
 
@@ -185,25 +197,35 @@ export async function updatePostCaption(req: Request, res: Response): Promise<vo
     throw new HttpError(403, "forbidden");
   }
 
-  post.caption = caption;
-  await post.save();
+post.caption = caption;
+await post.save();
 
-  const viewerId = req.user?.id;
-  const likesMeta = await getLikesMetaForPosts([String(post._id)], viewerId);
-  const meta = likesMeta[String(post._id)];
+const populatedPost = await PostModel.findById(post._id)
+  .populate("author", "username fullName avatarUrl")
+  .exec();
 
-  const data: PostDto = {
-    id: post._id.toString(),
-    authorId: post.author.toString(),
-    caption: post.caption,
-    imageUrl: post.imageUrl,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
-    likesCount: meta?.likesCount ?? 0,
-    likedByMe: meta?.likedByMe ?? false,
-  };
+if (!populatedPost) {
+  throw new HttpError(404, "updated post not found");
+}
 
-  res.status(200).json({ ok: true, data });
+const viewerId = req.user?.id;
+const postId = String(populatedPost._id);
+
+const [likesMeta, commentsMeta] = await Promise.all([
+  getLikesMetaForPosts([postId], viewerId),
+  getCommentsCountForPosts([postId]),
+]);
+
+const likeMeta = likesMeta[postId];
+
+const data = buildPostDto({
+  post: populatedPost,
+  likesCount: likeMeta?.likesCount ?? 0,
+  likedByMe: likeMeta?.likedByMe ?? false,
+  commentsCount: commentsMeta[postId] ?? 0,
+});
+
+res.status(200).json({ ok: true, data });
 }
 
 export async function deletePost(req: Request, res: Response): Promise<void> {

@@ -19,6 +19,7 @@ export interface PublicNotification {
   recipientId: string;
   actor: PublicNotificationActor;
   postId: string | null;
+  postPreviewImageUrl: string | null;
   conversationId: string | null;
   isRead: boolean;
   readAt: string | null;

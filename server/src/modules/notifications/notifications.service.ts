@@ -4,7 +4,7 @@ import { NotificationModel } from "./notifications.model.js";
 import { emitNewNotification } from "../../sockets/realtime.gateway.js";
 import {
   toPublicNotification,
-  type NotificationWithActor,
+  type NotificationWithActorAndPost,
 } from "./notifications.mapper.js";
 import type {
   NotificationEntityType,
@@ -59,6 +59,7 @@ export async function createNotification(
 
   const populatedNotification = await NotificationModel.findById(created._id)
     .populate("actorId", "username fullName avatarUrl")
+    .populate("postId", "imageUrl")
     .exec();
 
   if (!populatedNotification) {
@@ -67,7 +68,7 @@ export async function createNotification(
 
   emitNewNotification(input.recipientId, {
     notification: toPublicNotification(
-      populatedNotification as unknown as NotificationWithActor,
+      populatedNotification as unknown as NotificationWithActorAndPost
     ),
   });
 }
@@ -88,6 +89,7 @@ export async function listNotifications(input: ListNotificationsInput) {
     .sort({ _id: -1 })
     .limit(input.limit + 1)
     .populate("actorId", "username fullName avatarUrl")
+    .populate("postId", "imageUrl")
     .exec();
 
   const hasMore = notifications.length > input.limit;
@@ -122,6 +124,7 @@ export async function markNotificationAsRead(
     },
   )
     .populate("actorId", "username fullName avatarUrl")
+    .populate("postId", "imageUrl")
     .exec();
 
   if (!updated) {
