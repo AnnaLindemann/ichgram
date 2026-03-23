@@ -1,14 +1,32 @@
 import { NavLink } from "react-router-dom";
 import Logo from "@/assets/icons/Logo.svg";
 import { cn } from "@/lib/utils";
-import { navItems } from "./navItems"
+import { navItems } from "./navItems";
 
 type SidebarNavProps = {
+  isSearchActive: boolean;
+  isNotificationsActive: boolean;
+  unreadNotificationsCount: number;
   onSearchClick: () => void;
+  onNotificationsClick: () => void;
+  onRouteItemClick: () => void;
 };
 
-export function SidebarNav({ onSearchClick }: SidebarNavProps) {
-  const sidebarItems = navItems.filter((item) => item.showInSidebar);
+export function SidebarNav({
+  isSearchActive,
+  isNotificationsActive,
+  unreadNotificationsCount,
+  onSearchClick,
+  onNotificationsClick,
+  onRouteItemClick,
+}: SidebarNavProps) {
+  const topItems = navItems.filter(
+    (item) => item.showInSidebar && item.id !== "profile"
+  );
+
+  const profileItem = navItems.find(
+    (item) => item.showInSidebar && item.id === "profile"
+  );
 
   return (
     <aside className="hidden self-stretch border-r border-[#dbdbdb] lg:flex lg:w-64 lg:flex-col lg:bg-background">
@@ -18,59 +36,130 @@ export function SidebarNav({ onSearchClick }: SidebarNavProps) {
         </NavLink>
 
         <nav className="flex flex-col gap-2">
- {sidebarItems.map((item) => {
-  const DefaultIcon = item.icon;
+          {topItems.map((item) => {
+            const DefaultIcon = item.icon;
 
-  if (item.kind === "action" && item.id === "search") {
-    return (
-      <button
-        key={item.id}
-        type="button"
-        onClick={onSearchClick}
-        className={cn(
-          "flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-colors",
-          "font-normal text-[#262626] hover:text-black",
-        )}
-      >
-        <DefaultIcon className="h-6 w-6 shrink-0" />
-        <span>{item.label}</span>
-      </button>
-    );
-  }
+            if (item.id === "search") {
+              const Icon =
+                isSearchActive && item.activeIcon ? item.activeIcon : DefaultIcon;
 
-  if (item.kind === "route" && item.to) {
-    return (
-      <NavLink
-        key={item.id}
-        to={item.to}
-        end={item.to === "/"}
-        className={({ isActive }) =>
-          cn(
-            "flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-colors",
-            isActive
-              ? "font-semibold text-black"
-              : "font-normal text-[#262626] hover:text-black",
-          )
-        }
-      >
-        {({ isActive }) => {
-          const Icon =
-            isActive && item.activeIcon ? item.activeIcon : DefaultIcon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={onSearchClick}
+                  className={cn(
+                    "flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-colors",
+                    isSearchActive
+                      ? "font-semibold text-black"
+                      : "font-normal text-[#262626] hover:text-black"
+                  )}
+                >
+                  <Icon className="h-6 w-6 shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            }
 
-          return (
-            <>
-              <Icon className="h-6 w-6 shrink-0" />
-              <span>{item.label}</span>
-            </>
-          );
-        }}
-      </NavLink>
-    );
-  }
+            if (item.id === "notifications") {
+              const Icon =
+                isNotificationsActive && item.activeIcon
+                  ? item.activeIcon
+                  : DefaultIcon;
 
-  return null;
-})}
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={onNotificationsClick}
+                  className={cn(
+                    "flex items-center justify-between rounded-xl px-3 py-3 text-base transition-colors",
+                    isNotificationsActive
+                      ? "font-semibold text-black"
+                      : "font-normal text-[#262626] hover:text-black"
+                  )}
+                >
+                  <span className="flex items-center gap-4">
+                    <Icon className="h-6 w-6 shrink-0" />
+                    <span>{item.label}</span>
+                  </span>
+
+                  {unreadNotificationsCount > 0 ? (
+                    <span className="ml-3 inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff3040] px-1.5 text-[12px] font-semibold leading-5 text-white">
+                      {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            }
+
+            if (item.kind === "route" && item.to) {
+              return (
+                <NavLink
+                  key={item.id}
+                  to={item.to}
+                  end={item.to === "/"}
+                  onClick={onRouteItemClick}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-colors",
+                      isActive
+                        ? "font-semibold text-black"
+                        : "font-normal text-[#262626] hover:text-black"
+                    )
+                  }
+                >
+                  {({ isActive }) => {
+                    const Icon =
+                      isActive && item.activeIcon ? item.activeIcon : DefaultIcon;
+
+                    return (
+                      <>
+                        <Icon className="h-6 w-6 shrink-0" />
+                        <span>{item.label}</span>
+                      </>
+                    );
+                  }}
+                </NavLink>
+              );
+            }
+
+            return null;
+          })}
         </nav>
+
+        {profileItem ? (
+          <div className="pt-8">
+            {profileItem.kind === "route" && profileItem.to ? (
+              <NavLink
+                to={profileItem.to}
+                onClick={onRouteItemClick}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-colors",
+                    isActive
+                      ? "font-semibold text-black"
+                      : "font-normal text-[#262626] hover:text-black"
+                  )
+                }
+              >
+                {({ isActive }) => {
+                  const ProfileIcon =
+                    isActive && profileItem.activeIcon
+                      ? profileItem.activeIcon
+                      : profileItem.icon;
+
+                  return (
+                    <>
+                      <ProfileIcon className="h-6 w-6 shrink-0" />
+                      <span>{profileItem.label}</span>
+                    </>
+                  );
+                }}
+              </NavLink>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </aside>
   );

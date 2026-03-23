@@ -6,7 +6,10 @@ function cn(...v: Array<string | false | undefined>) {
 }
 
 type MobileBottomNavProps = {
+  unreadNotificationsCount: number;
   onSearchClick: () => void;
+  onNotificationsClick: () => void;
+  onRouteItemClick: () => void;
 };
 
 type RouteNavItem = NavItem & {
@@ -26,7 +29,12 @@ function isMobileRouteItem(item: NavItem): item is RouteNavItem {
   );
 }
 
-export function MobileBottomNav({ onSearchClick }: MobileBottomNavProps) {
+export function MobileBottomNav({
+  unreadNotificationsCount,
+  onSearchClick,
+  onNotificationsClick,
+  onRouteItemClick,
+}: MobileBottomNavProps) {
   const items = navItems.filter(isMobileVisibleItem).slice(0, 5);
 
   return (
@@ -41,7 +49,7 @@ export function MobileBottomNav({ onSearchClick }: MobileBottomNavProps) {
         {items.map((item) => {
           const Icon = item.icon;
 
-          if (item.kind === "action" && item.id === "search") {
+          if (item.id === "search") {
             return (
               <button
                 key={item.id}
@@ -58,11 +66,35 @@ export function MobileBottomNav({ onSearchClick }: MobileBottomNavProps) {
             );
           }
 
+          if (item.id === "notifications") {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={onNotificationsClick}
+                className={cn(
+                  "relative flex items-center justify-center rounded-xl transition",
+                  "hover:bg-muted"
+                )}
+                aria-label={item.label}
+              >
+                <Icon className="h-6 w-6" />
+
+                {unreadNotificationsCount > 0 ? (
+                  <span className="absolute right-2 top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-[#ff3040] px-1 text-[10px] font-semibold leading-4 text-white">
+                    {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+          }
+
           if (isMobileRouteItem(item)) {
             return (
               <NavLink
                 key={item.id}
                 to={item.to}
+                onClick={onRouteItemClick}
                 className={({ isActive }) =>
                   cn(
                     "flex items-center justify-center rounded-xl transition",

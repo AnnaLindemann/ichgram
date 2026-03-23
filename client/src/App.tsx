@@ -5,7 +5,6 @@ import AppLayout from "./layouts/AppLayout";
 import NotFoundPage from "./pages/NotFoundPage";
 import FeedPage from "./pages/FeedPage";
 import ProfilePage from "./pages/ProfilePage";
-import NotificationsPage from "./pages/NotificationsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ExplorePage from "./pages/ExplorePage";
 import CreatePostPage from "./pages/CreatePostPage";
@@ -17,14 +16,15 @@ export default function App() {
   return (
     <Routes>
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/trouble-logging-in" element={<TroubleLoggingInPage />}
+      <Route
+        path="/trouble-logging-in"
+        element={<TroubleLoggingInPage />}
       />
-      <Route path="/login" element={<LoginPage/>}/>
+      <Route path="/login" element={<LoginPage />} />
 
       <Route element={<AppLayout />}>
         <Route path="/" element={<FeedPage />} />
         <Route path="/explore" element={<ExplorePage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/create" element={<CreatePostPage />} />
         <Route path="/profile" element={<ProfilePage />} />
