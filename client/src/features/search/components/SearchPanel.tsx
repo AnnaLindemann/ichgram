@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { searchUsers } from "../api/search.api";
 import type { SearchUser } from "../types/search-user.types";
 
@@ -15,8 +16,14 @@ type SearchState =
   | { status: "error"; message: string };
 
 export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>({ status: "idle" });
+
+    function handleUserClick(userId: string) {
+    onClose();
+    navigate(`/profile/${userId}`);
+  }
 
   useEffect(() => {
     if (!isOpen) {
@@ -93,28 +100,33 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
       return (
         <div className="space-y-1">
           {state.users.map((user) => (
-            <div key={user.id} className="flex items-center gap-3 py-2">
-              <div className="h-14 w-14 overflow-hidden rounded-full bg-[#d9d9d9]">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.username}
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
-              </div>
+            <button
+  key={user.id}
+  type="button"
+  onClick={() => handleUserClick(user.id)}
+  className="flex w-full items-center gap-3 py-2 text-left"
+>
+  <div className="h-14 w-14 overflow-hidden rounded-full bg-[#d9d9d9]">
+    {user.avatarUrl ? (
+      <img
+        src={user.avatarUrl}
+        alt={user.username}
+        className="h-full w-full object-cover"
+      />
+    ) : null}
+  </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-[16px] font-semibold text-black">
-                  {user.username}
-                </p>
-                {user.fullName ? (
-                  <p className="truncate text-[14px] text-[#8e8e8e]">
-                    {user.fullName}
-                  </p>
-                ) : null}
-              </div>
-            </div>
+  <div className="min-w-0">
+    <p className="truncate text-[16px] font-semibold text-black">
+      {user.username}
+    </p>
+    {user.fullName ? (
+      <p className="truncate text-[14px] text-[#8e8e8e]">
+        {user.fullName}
+      </p>
+    ) : null}
+  </div>
+</button>
           ))}
         </div>
       );

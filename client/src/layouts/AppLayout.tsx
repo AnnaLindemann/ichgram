@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarNav } from "@/shared/navigation/SidebarNav";
 import { MobileBottomNav } from "@/shared/navigation/MobileBottomNav";
 import { MobileTopBar } from "@/shared/navigation/MobileTopBar";
-import { SearchPanel } from "@/features/search/comonents/SearchPanel";
+import { SearchPanel } from "@/features/search/components/SearchPanel";
 import { Footer } from "./footer";
 
 export default function AppLayout() {

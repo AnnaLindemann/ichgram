@@ -28,6 +28,7 @@ export default function App() {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/create" element={<CreatePostPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:id" element={<ProfilePage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
