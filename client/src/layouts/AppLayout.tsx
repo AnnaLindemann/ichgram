@@ -25,7 +25,7 @@ export default function AppLayout() {
         <Footer />
       </div>
 
-      <MobileBottomNav />
+      <MobileBottomNav onSearchClick={() => setIsSearchOpen(true)} />
 
       <SearchPanel
         isOpen={isSearchOpen}

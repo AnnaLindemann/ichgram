@@ -133,14 +133,29 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
         type="button"
         aria-label="Close search panel"
         onClick={onClose}
-        className="fixed inset-y-0 left-64 right-0 z-40 hidden bg-black/50 lg:block"
+        className="fixed inset-0 z-40 bg-black/50 lg:left-64"
       />
 
-      <aside className="fixed inset-y-0 left-64 z-50 hidden w-[368px] rounded-tr-[30px] border-r border-[#dbdbdb] bg-white lg:block">
+      <aside
+        className="
+          fixed inset-y-0 left-0 z-50 w-full bg-white
+          lg:left-64 lg:w-[368px] lg:rounded-tr-[30px] lg:border-r lg:border-[#dbdbdb]
+        "
+      >
         <div className="flex h-full flex-col px-6 pt-6">
-          <h2 className="mb-8 text-[32px] font-bold leading-none text-black">
-            Search
-          </h2>
+          <div className="mb-8 flex items-center justify-between lg:block">
+            <h2 className="text-[32px] font-bold leading-none text-black">
+              Search
+            </h2>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-sm font-medium text-black lg:hidden"
+            >
+              Close
+            </button>
+          </div>
 
           <div className="mb-8 flex h-10 items-center rounded-[8px] bg-[#efefef] px-4">
             <input

@@ -5,17 +5,29 @@ function cn(...v: Array<string | false | undefined>) {
   return v.filter(Boolean).join(" ");
 }
 
+type MobileBottomNavProps = {
+  onSearchClick: () => void;
+};
+
 type RouteNavItem = NavItem & {
   kind: "route";
   to: string;
 };
 
-function isMobileRouteItem(item: NavItem): item is RouteNavItem {
-  return item.showInMobileBottom !== false && item.kind === "route" && typeof item.to === "string";
+function isMobileVisibleItem(item: NavItem): boolean {
+  return item.showInMobileBottom !== false;
 }
 
-export function MobileBottomNav() {
-  const items = navItems.filter(isMobileRouteItem).slice(0, 5);
+function isMobileRouteItem(item: NavItem): item is RouteNavItem {
+  return (
+    item.showInMobileBottom !== false &&
+    item.kind === "route" &&
+    typeof item.to === "string"
+  );
+}
+
+export function MobileBottomNav({ onSearchClick }: MobileBottomNavProps) {
+  const items = navItems.filter(isMobileVisibleItem).slice(0, 5);
 
   return (
     <nav
@@ -29,22 +41,43 @@ export function MobileBottomNav() {
         {items.map((item) => {
           const Icon = item.icon;
 
-          return (
-            <NavLink
-              key={item.id}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
+          if (item.kind === "action" && item.id === "search") {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={onSearchClick}
+                className={cn(
                   "flex items-center justify-center rounded-xl transition",
-                  "hover:bg-muted",
-                  isActive && "bg-muted"
-                )
-              }
-              aria-label={item.label}
-            >
-              <Icon className="h-6 w-6" />
-            </NavLink>
-          );
+                  "hover:bg-muted"
+                )}
+                aria-label={item.label}
+              >
+                <Icon className="h-6 w-6" />
+              </button>
+            );
+          }
+
+          if (isMobileRouteItem(item)) {
+            return (
+              <NavLink
+                key={item.id}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center justify-center rounded-xl transition",
+                    "hover:bg-muted",
+                    isActive && "bg-muted"
+                  )
+                }
+                aria-label={item.label}
+              >
+                <Icon className="h-6 w-6" />
+              </NavLink>
+            );
+          }
+
+          return <div key={item.id} />;
         })}
       </div>
     </nav>
