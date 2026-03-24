@@ -18,10 +18,10 @@ export const updateMeSchema = z
     avatarUrl: z
       .string()
       .trim()
-      .min(1, "avatarUrl cannot be empty")
       .max(500, "avatarUrl must be less than or equal to 500 characters")
       .url("avatarUrl must be a valid URL")
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     website: z
       .string()

@@ -1,8 +1,8 @@
 import { http } from "@/shared/api/http";
 import type { ApiResponse } from "@/shared/api/types";
 import { getAuthToken } from "@/lib/auth-storage";
-
-import type { PublicUser, ProfilePostsData } from "./profile.types";
+import axios from "axios";
+import type { PublicUser, ProfilePostsData } from "../types/profile.types";
 
 type FollowListResponse = ApiResponse<{
   items: PublicUser[];
@@ -35,6 +35,18 @@ type PostsListResponse =
       error: string;
     };
 
+export type UploadMyAvatarResponse =
+  | {
+      ok: true;
+      data: {
+        avatarUrl: string;
+      };
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
 function getAuthHeaders(): Record<string, string> | undefined {
   const token = getAuthToken();
 
@@ -61,6 +73,72 @@ export async function getUserProfileById(
   const res = await http.get<ApiResponse<PublicUser>>(`/api/users/${userId}`);
 
   return res.data;
+}
+
+export type UpdateMeProfileInput = {
+  fullName?: string;
+  bio?: string;
+  avatarUrl?: string;
+  website?: string;
+};
+
+export async function updateMeProfile(
+  input: UpdateMeProfileInput,
+): Promise<ApiResponse<PublicUser>> {
+  const res = await http.patch<ApiResponse<PublicUser>>("/api/users/me", input, {
+    headers: getAuthHeaders(),
+  });
+
+  return res.data;
+}
+
+export async function uploadMyAvatar(
+  file: File,
+): Promise<UploadMyAvatarResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    return {
+      ok: false,
+      message: "Unauthorized",
+    };
+  }
+
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  try {
+    const res = await axios.post<UploadMyAvatarResponse>(
+      `${import.meta.env.VITE_API_URL}/api/users/me/avatar`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    return res.data;
+  } catch (error: unknown) {
+    const message =
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof error.response === "object" &&
+      error.response !== null &&
+      "data" in error.response &&
+      typeof error.response.data === "object" &&
+      error.response.data !== null &&
+      "message" in error.response.data &&
+      typeof error.response.data.message === "string"
+        ? error.response.data.message
+        : "Failed to upload avatar";
+
+    return {
+      ok: false,
+      message,
+    };
+  }
 }
 
 export async function getFollowersCount(userId: string): Promise<number> {
@@ -117,4 +195,3 @@ export async function getPostsByUser(userId: string): Promise<ProfilePostsData> 
     total: res.data.meta.total,
   };
 }
-

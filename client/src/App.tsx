@@ -12,6 +12,8 @@ import RegisterPage from "./pages/RegisterPage";
 import TroubleLoggingInPage from "./pages/TroubleLoggingInPage";
 import LoginPage from "./pages/LoginPage";
 import PostDetailsPage from "./pages/PostDetailsPage";
+import EditProfilePage from "./pages/EditProfilePage";
+
 
 export default function App() {
   return (
@@ -29,7 +31,8 @@ export default function App() {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/create" element={<CreatePostPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/profile/:id" element={<ProfilePage />} />
+        <Route path="/profile/edit" element={<EditProfilePage />} />
+        <Route path="/profile/:id" element={<ProfilePage />} />        
         <Route path="/posts/:id" element={<PostDetailsPage />} />
       </Route>
 

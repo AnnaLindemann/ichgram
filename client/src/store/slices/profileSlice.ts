@@ -6,8 +6,8 @@ import {
   getMeProfile,
   getPostsByUser,
   getUserProfileById,
-} from "@/features/profile/profile.api";
-import type { MyProfileData, PublicUser } from "@/features/profile/profile.types";
+} from "@/features/profile/api/profile.api";
+import type { MyProfileData, PublicUser } from "@/features/profile/types/profile.types";
 
 type ProfileState = {
   currentProfile: MyProfileData | null;

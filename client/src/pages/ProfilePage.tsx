@@ -5,6 +5,24 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
 
+function getAssetBaseUrl(): string {
+  const apiUrl = import.meta.env.VITE_API_URL ?? "";
+
+  return apiUrl.replace(/\/api\/?$/, "");
+}
+
+function resolveAvatarSrc(avatarUrl?: string | null): string {
+  if (!avatarUrl) {
+    return "/placeholder-avatar.svg";
+  }
+
+  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
+    return avatarUrl;
+  }
+
+  return `${getAssetBaseUrl()}${avatarUrl}`;
+}
+
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
 
@@ -29,13 +47,14 @@ export default function ProfilePage() {
   }
 
   const { user, stats, posts } = currentProfile;
+  const avatarSrc = resolveAvatarSrc(user.avatarUrl);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6">
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
         <div className="flex justify-center md:w-[180px] md:justify-start">
           <img
-            src={user.avatarUrl || "/placeholder-avatar.png"}
+            src={avatarSrc}
             alt={user.username}
             className="h-24 w-24 rounded-full object-cover md:h-[150px] md:w-[150px]"
           />
@@ -46,13 +65,13 @@ export default function ProfilePage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <h1 className="text-2xl font-normal">{user.username}</h1>
 
-        <Button
-  asChild
-  size="sm"
-  className="h-8 w-fit rounded-[8px] bg-[rgba(239,239,239,1)] px-10 text-sm font-semibold text-black hover:bg-[rgba(239,239,239,1)]"
->
-  <Link to="/profile/edit">Edit profile</Link>
-</Button>
+              <Button
+                asChild
+                size="sm"
+                className="h-8 w-fit rounded-[8px] bg-[rgba(239,239,239,1)] px-10 text-sm font-semibold text-black hover:bg-[rgba(239,239,239,1)]"
+              >
+                <Link to="/profile/edit">Edit profile</Link>
+              </Button>
             </div>
 
             <div className="flex items-center gap-6 text-sm md:gap-10 md:text-base">

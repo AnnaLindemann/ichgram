@@ -34,3 +34,10 @@ export type ProfilePostsData = {
   items: ProfilePostPreview[];
   total: number;
 };
+
+export type EditProfileFormValues = {
+  fullName: string;
+  bio: string;
+  website: string;
+  avatarUrl: string;
+};

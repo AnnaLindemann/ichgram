@@ -93,6 +93,32 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
   });
 }
 
+export async function uploadAvatar(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new HttpError(401, "unauthorized");
+  }
+
+  if (!req.file) {
+    throw new HttpError(400, "avatar file is required");
+  }
+
+  const avatarUrl = `/uploads/${req.file.filename}`;
+
+  const user = await UserModel.findById(req.user.id).exec();
+
+  if (!user) {
+    throw new HttpError(404, "user not found");
+  }
+
+  user.avatarUrl = avatarUrl;
+  await user.save();
+
+  res.status(200).json({
+    ok: true,
+    data: { avatarUrl },
+  });
+}
+
 export async function searchUsers(req: Request, res: Response): Promise<void> {
   const { q, limit } = searchUsersQuerySchema.parse(req.query);
 

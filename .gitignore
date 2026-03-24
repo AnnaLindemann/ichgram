@@ -42,6 +42,10 @@ vite.config.*.timestamp-*
 server/dist/
 server/coverage/
 
+# ===== Uploads (user-generated files) =====
+server/uploads/*
+!server/uploads/.gitkeep
+
 # ===== Docker / local volumes =====
 db_data/
 mongo_data/
