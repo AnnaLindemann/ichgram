@@ -8,6 +8,7 @@ export type UserDb = {
   fullName: string;
   passwordHash: string;
   bio: string;
+  website: string;
   avatarUrl: string;
   role: UserRole;
   resetPasswordToken: string | null;
@@ -24,6 +25,7 @@ export type PublicUser = {
   email: string;
   fullName: string;
   bio: string;
+  website: string;
   avatarUrl: string;
   role: UserRole;
   createdAt: string | null;
@@ -65,6 +67,7 @@ export function toPublicUser(user: UserDocument): PublicUser {
     fullName: user.fullName,
     role: user.role,
     bio: user.bio,
+    website: user.website,
     avatarUrl: user.avatarUrl,
     createdAt: toIsoOrNull(user.createdAt),
     updatedAt: toIsoOrNull(user.updatedAt),

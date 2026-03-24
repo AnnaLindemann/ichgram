@@ -8,6 +8,7 @@ export type AuthUser = {
   fullName: string;
   role: string;
   bio: string;
+  website: string;
   avatarUrl: string;
   createdAt: string;
   updatedAt: string;

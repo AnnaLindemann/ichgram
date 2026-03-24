@@ -61,7 +61,7 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
   }
 
   const parsed = updateMeSchema.parse(req.body);
-  const { fullName, bio, avatarUrl } = parsed;
+  const { fullName, bio, avatarUrl, website } = parsed;
 
   const user = await UserModel.findById(req.user.id).exec();
 
@@ -79,6 +79,10 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
 
   if (avatarUrl !== undefined) {
     user.avatarUrl = avatarUrl;
+  }
+
+  if (website !== undefined) {
+    user.website = website;
   }
 
   await user.save();

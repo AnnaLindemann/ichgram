@@ -22,12 +22,21 @@ export const updateMeSchema = z
       .max(500, "avatarUrl must be less than or equal to 500 characters")
       .url("avatarUrl must be a valid URL")
       .optional(),
+
+    website: z
+      .string()
+      .trim()
+      .max(200, "website must be less than or equal to 200 characters")
+      .url("website must be a valid URL")
+      .optional()
+      .or(z.literal("")),
   })
   .refine(
     (data) =>
       data.fullName !== undefined ||
       data.bio !== undefined ||
-      data.avatarUrl !== undefined,
+      data.avatarUrl !== undefined ||
+      data.website !== undefined,
     {
       message: "at least one field is required",
     }

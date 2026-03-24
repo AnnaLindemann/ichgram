@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema<UserDb>(
       default: "",
       trim: true,
     },
+    website: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     avatarUrl: {
       type: String,
       default: "",
