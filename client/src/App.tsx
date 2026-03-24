@@ -13,6 +13,7 @@ import TroubleLoggingInPage from "./pages/TroubleLoggingInPage";
 import LoginPage from "./pages/LoginPage";
 import PostDetailsPage from "./pages/PostDetailsPage";
 import EditProfilePage from "./pages/EditProfilePage";
+import OtherProfilePage from "./pages/OtherProfilePage";
 
 
 export default function App() {
@@ -32,7 +33,7 @@ export default function App() {
         <Route path="/create" element={<CreatePostPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/edit" element={<EditProfilePage />} />
-        <Route path="/profile/:id" element={<ProfilePage />} />        
+        <Route path="/profile/:id" element={<OtherProfilePage />} />       
         <Route path="/posts/:id" element={<PostDetailsPage />} />
       </Route>
 

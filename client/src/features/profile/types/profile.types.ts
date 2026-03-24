@@ -24,15 +24,21 @@ export type ProfilePostPreview = {
   imageUrl: string;
 };
 
+export type ProfilePostsData = {
+  items: ProfilePostPreview[];
+  total: number;
+};
+
 export type MyProfileData = {
   user: PublicUser;
   stats: ProfileStats;
   posts: ProfilePostPreview[];
 };
 
-export type ProfilePostsData = {
-  items: ProfilePostPreview[];
-  total: number;
+export type ViewedProfileData = {
+  user: PublicUser;
+  stats: ProfileStats;
+  posts: ProfilePostPreview[];
 };
 
 export type EditProfileFormValues = {

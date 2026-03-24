@@ -7,11 +7,14 @@ import {
   getPostsByUser,
   getUserProfileById,
 } from "@/features/profile/api/profile.api";
-import type { MyProfileData, PublicUser } from "@/features/profile/types/profile.types";
+import type {
+  MyProfileData,
+  ViewedProfileData,
+} from "@/features/profile/types/profile.types";
 
 type ProfileState = {
   currentProfile: MyProfileData | null;
-  viewedProfile: PublicUser | null;
+  viewedProfile: ViewedProfileData | null;
   loading: boolean;
   error: string | null;
 };
@@ -37,21 +40,21 @@ export const fetchMyProfile = createAsyncThunk<
 
     const user = profileResponse.data;
 
-   const [followersCount, followingCount, postsData] = await Promise.all([
-  getFollowersCount(user.id),
-  getFollowingCount(user.id),
-  getPostsByUser(user.id),
-]);
+    const [followersCount, followingCount, postsData] = await Promise.all([
+      getFollowersCount(user.id),
+      getFollowingCount(user.id),
+      getPostsByUser(user.id),
+    ]);
 
-return {
-  user,
-  stats: {
-    postsCount: postsData.total,
-    followersCount,
-    followingCount,
-  },
-  posts: postsData.items,
-};
+    return {
+      user,
+      stats: {
+        postsCount: postsData.total,
+        followersCount,
+        followingCount,
+      },
+      posts: postsData.items,
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load current profile";
@@ -61,17 +64,40 @@ return {
 });
 
 export const fetchUserProfile = createAsyncThunk<
-  PublicUser,
+  ViewedProfileData,
   string,
   { rejectValue: string }
 >("profile/fetchUserProfile", async (userId, { rejectWithValue }) => {
-  const response = await getUserProfileById(userId);
+  try {
+    const profileResponse = await getUserProfileById(userId);
 
-  if (!response.ok) {
-    return rejectWithValue(response.error);
+    if (!profileResponse.ok) {
+      return rejectWithValue(profileResponse.error);
+    }
+
+    const user = profileResponse.data;
+
+    const [followersCount, followingCount, postsData] = await Promise.all([
+      getFollowersCount(user.id),
+      getFollowingCount(user.id),
+      getPostsByUser(user.id),
+    ]);
+
+    return {
+      user,
+      stats: {
+        postsCount: postsData.total,
+        followersCount,
+        followingCount,
+      },
+      posts: postsData.items,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load user profile";
+
+    return rejectWithValue(message);
   }
-
-  return response.data;
 });
 
 const profileSlice = createSlice({
