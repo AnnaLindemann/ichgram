@@ -145,12 +145,11 @@ export const navItems: NavItem[] = [
 },
   {
     id: "create",
-    label: "Create",
-    kind: "route",
-    to: "/create",
-    icon: PlusSquare,
-    showInSidebar: true,
-    showInMobileBottom: true,
+  label: "Create",
+  kind: "action",
+  icon: PlusSquare,
+  showInSidebar: true,
+  showInMobileBottom: true,
   },
   {
     id: "profile",

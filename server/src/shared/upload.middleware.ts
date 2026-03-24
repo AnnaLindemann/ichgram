@@ -12,12 +12,21 @@ const ALLOWED_MIME_TYPES = new Set([
 // 5 MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-const storage = multer.diskStorage({
+const avatarStorage = multer.diskStorage({
   destination: "uploads/",
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const unique = crypto.randomBytes(8).toString("hex");
     cb(null, `avatar-${Date.now()}-${unique}${ext}`);
+  },
+});
+
+const postStorage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const unique = crypto.randomBytes(8).toString("hex");
+    cb(null, `post-${Date.now()}-${unique}${ext}`);
   },
 });
 
@@ -33,9 +42,16 @@ function fileFilter(
   }
 }
 
-// Call as uploadSingleImage(req, res, next) — field name: "avatar"
+// Field name: "avatar"
 export const uploadSingleImage = multer({
-  storage,
+  storage: avatarStorage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE },
 }).single("avatar");
+
+// Field name: "image"
+export const uploadSinglePostImage = multer({
+  storage: postStorage,
+  fileFilter,
+  limits: { fileSize: MAX_FILE_SIZE },
+}).single("image");

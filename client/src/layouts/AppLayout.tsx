@@ -8,6 +8,9 @@ import { SearchPanel } from "@/features/search/components/SearchPanel";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { getUnreadNotificationsCount } from "@/features/notifications/api/getUnreadNotificationsCount";
 import { Footer } from "./footer";
+import { CreatePostDialog } from "@/features/posts/components/CreatePostDialog";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchMyProfile } from "@/store/slices/profileSlice";
 
 type ActiveOverlay = "search" | "notifications" | null;
 
@@ -15,6 +18,9 @@ const UNREAD_NOTIFICATIONS_POLLING_MS = 10000;
 
 export default function AppLayout() {
   const location = useLocation();
+   const dispatch = useAppDispatch();
+
+  const currentProfile = useAppSelector((state) => state.profile.currentProfile);
   const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay>(null);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
@@ -24,10 +30,23 @@ export default function AppLayout() {
   const openSearch = () => setActiveOverlay("search");
   const openNotifications = () => setActiveOverlay("notifications");
   const closeOverlays = () => setActiveOverlay(null);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+
+ const openCreatePost = () => {
+  closeOverlays();
+  setIsCreatePostOpen(true);
+};
 
   useEffect(() => {
-    closeOverlays();
-  }, [location.pathname]);
+    if (!currentProfile) {
+      void dispatch(fetchMyProfile());
+    }
+  }, [currentProfile, dispatch]);
+
+  useEffect(() => {
+  closeOverlays();
+  setIsCreatePostOpen(false);
+}, [location.pathname]);
 
   useEffect(() => {
     let isActive = true;
@@ -79,9 +98,11 @@ export default function AppLayout() {
           isSearchActive={isSearchOpen}
           isNotificationsActive={isNotificationsOpen}
           unreadNotificationsCount={unreadNotificationsCount}
+          profileAvatarUrl={currentProfile?.user.avatarUrl ?? null}
           onSearchClick={openSearch}
           onNotificationsClick={openNotifications}
           onRouteItemClick={closeOverlays}
+          onCreateClick={openCreatePost}
         />
 
         <main className="flex-1 px-4 py-4 pt-4 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)] lg:pb-4">
@@ -106,8 +127,14 @@ export default function AppLayout() {
         unreadNotificationsCount={unreadNotificationsCount}
         onSearchClick={openSearch}
         onNotificationsClick={openNotifications}
+        onCreateClick={openCreatePost}
         onRouteItemClick={closeOverlays}
       />
+
+      <CreatePostDialog
+  open={isCreatePostOpen}
+  onOpenChange={setIsCreatePostOpen}
+/>
     </div>
   );
 }

@@ -7,18 +7,22 @@ type SidebarNavProps = {
   isSearchActive: boolean;
   isNotificationsActive: boolean;
   unreadNotificationsCount: number;
+  profileAvatarUrl?: string | null;
   onSearchClick: () => void;
   onNotificationsClick: () => void;
   onRouteItemClick: () => void;
+  onCreateClick: () => void;
 };
 
 export function SidebarNav({
   isSearchActive,
   isNotificationsActive,
   unreadNotificationsCount,
+  profileAvatarUrl,
   onSearchClick,
   onNotificationsClick,
   onRouteItemClick,
+  onCreateClick,
 }: SidebarNavProps) {
   const topItems = navItems.filter(
     (item) => item.showInSidebar && item.id !== "profile"
@@ -93,6 +97,20 @@ export function SidebarNav({
               );
             }
 
+            if (item.id === "create") {
+  return (
+    <button
+      key={item.id}
+      type="button"
+      onClick={onCreateClick}
+      className="flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-colors font-normal text-[#262626] hover:text-black"
+    >
+      <item.icon className="h-6 w-6 shrink-0" />
+      <span>{item.label}</span>
+    </button>
+  );
+}
+
             if (item.kind === "route" && item.to) {
               return (
                 <NavLink
@@ -143,7 +161,7 @@ export function SidebarNav({
                   )
                 }
               >
-                {({ isActive }) => {
+                              {({ isActive }) => {
                   const ProfileIcon =
                     isActive && profileItem.activeIcon
                       ? profileItem.activeIcon
@@ -151,7 +169,18 @@ export function SidebarNav({
 
                   return (
                     <>
-                      <ProfileIcon className="h-6 w-6 shrink-0" />
+                      {profileAvatarUrl ? (
+                        <img
+                          src={profileAvatarUrl}
+                          alt="My profile"
+                          className={cn(
+                            "h-6 w-6 shrink-0 rounded-full object-cover",
+                            isActive ? "ring-2 ring-black" : ""
+                          )}
+                        />
+                      ) : (
+                        <ProfileIcon className="h-6 w-6 shrink-0" />
+                      )}
                       <span>{profileItem.label}</span>
                     </>
                   );

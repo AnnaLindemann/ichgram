@@ -1,5 +1,4 @@
 import { http } from "@/shared/api/http";
-import type { ApiResponse } from "@/shared/api/types";
 
 export type PostAuthorDto = {
   id: string;
@@ -20,10 +19,43 @@ export type PostDto = {
   author: PostAuthorDto;
 };
 
-export async function getPosts(authorId?: string): Promise<ApiResponse<PostDto[]>> {
-  const res = await http.get<ApiResponse<PostDto[]>>("/api/posts", {
-    params: authorId ? { authorId } : undefined,
+// Full backend response shape for GET /api/posts (includes pagination meta)
+type ListPostsApiResponse =
+  | {
+      ok: true;
+      data: PostDto[];
+      meta: {
+        page: number;
+        pages: number;
+        limit: number;
+        total: number;
+        sort: string;
+        order: string;
+      };
+    }
+  | { ok: false; error: string };
+
+export type GetPostsResult =
+  | { ok: true; data: PostDto[]; page: number; totalPages: number }
+  | { ok: false; error: string };
+
+export async function getPosts(page = 1, authorId?: string): Promise<GetPostsResult> {
+  const res = await http.get<ListPostsApiResponse>("/api/posts", {
+    params: {
+      limit: 10,
+      page,
+      ...(authorId ? { authorId } : {}),
+    },
   });
 
-  return res.data;
+  if (!res.data.ok) {
+    return res.data;
+  }
+
+  return {
+    ok: true,
+    data: res.data.data,
+    page: res.data.meta.page,
+    totalPages: res.data.meta.pages,
+  };
 }

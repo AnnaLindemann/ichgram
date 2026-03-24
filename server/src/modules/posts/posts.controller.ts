@@ -4,7 +4,7 @@ import type { CreatePostInput, ListPostsResponse, PostDto } from "./posts.type.j
 import { UserModel } from "../users/users.model.js";
 import { PostModel } from "./posts.model.js";
 import {
-  createPostSchema,
+  createPostBodySchema,
   updatePostSchema,
   listPostsQuerySchema,
 } from "./posts.schemas.js";
@@ -24,8 +24,12 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     throw new HttpError(401, "authenticated user id is invalid");
   }
 
-  const parsed = createPostSchema.parse(req.body);
-  const { imageUrl, caption } = parsed;
+  if (!req.file) {
+    throw new HttpError(400, "image file is required");
+  }
+
+  const imageUrl = `/uploads/${req.file.filename}`;
+  const { caption } = createPostBodySchema.parse(req.body);
 
   const existed = await UserModel.findById(authorId).exec();
 

@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+// Used when creating a post via multipart/form-data — image comes from req.file,
+// only caption is read from req.body.
+export const createPostBodySchema = z.object({
+  caption: z
+    .string()
+    .trim()
+    .max(200, "caption must be less than or equal to 200 characters")
+    .optional(),
+});
+
+export type CreatePostBody = z.infer<typeof createPostBodySchema>;
+
 export const createPostSchema = z.object({
   imageUrl: z
     .string()

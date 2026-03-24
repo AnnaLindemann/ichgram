@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
 import { ProfilePostsGrid } from "@/features/profile/components/ProfilePostsGrid";
@@ -12,6 +12,7 @@ import {
 export default function OtherProfilePage() {
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const { viewedProfile, loading, error } = useAppSelector(
     (state) => state.profile,
@@ -52,7 +53,10 @@ export default function OtherProfilePage() {
       <ProfileHeader user={user} stats={stats} />
 
       <div className="mt-8 border-t pt-6">
-        <ProfilePostsGrid posts={posts} />
+        <ProfilePostsGrid
+          posts={posts}
+          onPostClick={(postId) => navigate(`/posts/${postId}`)}
+        />
       </div>
     </section>
   );

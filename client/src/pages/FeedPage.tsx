@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getPosts } from "../features/feed/api/feed.api";
 import { mapPostDtoToFeedPost } from "../features/feed/api/map-post";
 import { FeedPostCard } from "../features/feed/components/FeedPostCard";
@@ -10,19 +11,29 @@ type UiState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "empty" }
-  | { status: "ready"; posts: FeedPost[] };
+  | {
+      status: "ready";
+      posts: FeedPost[];
+      page: number;
+      totalPages: number;
+      loadingMore: boolean;
+    };
+
+const FEED_GRID_CLASS =
+  "grid grid-cols-1 gap-y-8 md:justify-center lg:grid-cols-[repeat(2,470px)] lg:justify-start lg:gap-x-9";
 
 export default function FeedPage() {
+  const navigate = useNavigate();
   const [state, setState] = useState<UiState>({ status: "loading" });
 
   useEffect(() => {
     let isMounted = true;
 
-    async function load() {
+    async function loadInitial() {
       setState({ status: "loading" });
 
       try {
-        const resp = await getPosts();
+        const resp = await getPosts(1);
 
         if (!isMounted) {
           return;
@@ -41,6 +52,9 @@ export default function FeedPage() {
         setState({
           status: "ready",
           posts: resp.data.map(mapPostDtoToFeedPost),
+          page: resp.page,
+          totalPages: resp.totalPages,
+          loadingMore: false,
         });
       } catch {
         if (!isMounted) {
@@ -51,17 +65,48 @@ export default function FeedPage() {
       }
     }
 
-    void load();
+    void loadInitial();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
+  async function loadMore() {
+    if (state.status !== "ready" || state.loadingMore) {
+      return;
+    }
+
+    const { posts, page, totalPages } = state;
+    const nextPage = page + 1;
+
+    setState({ status: "ready", posts, page, totalPages, loadingMore: true });
+
+    try {
+      const resp = await getPosts(nextPage);
+
+      if (!resp.ok) {
+        // Restore previous state on error, button becomes clickable again
+        setState({ status: "ready", posts, page, totalPages, loadingMore: false });
+        return;
+      }
+
+      setState({
+        status: "ready",
+        posts: [...posts, ...resp.data.map(mapPostDtoToFeedPost)],
+        page: resp.page,
+        totalPages: resp.totalPages,
+        loadingMore: false,
+      });
+    } catch {
+      setState({ status: "ready", posts, page, totalPages, loadingMore: false });
+    }
+  }
+
   if (state.status === "loading") {
     return (
       <div className="w-full">
-        <div className="grid grid-cols-1 gap-y-8 md:justify-center lg:grid-cols-[repeat(2,470px)] lg:justify-start lg:gap-x-9">
+        <div className={FEED_GRID_CLASS}>
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="w-full lg:w-[470px]">
               <FeedPostCardSkeleton />
@@ -80,25 +125,43 @@ export default function FeedPage() {
     return <div className="p-4">No posts yet</div>;
   }
 
+  const hasMore = state.page < state.totalPages;
+
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 gap-y-8 md:justify-center lg:grid-cols-[repeat(2,470px)] lg:justify-start lg:gap-x-9">
+      <div className={FEED_GRID_CLASS}>
         {state.posts.map((post) => (
           <div key={post.id} className="w-full lg:w-[470px]">
-            <FeedPostCard post={post} />
+            <FeedPostCard
+              post={post}
+              onPostClick={(postId) => navigate(`/posts/${postId}`)}
+            />
           </div>
         ))}
 
         <div className="mt-4 flex flex-col items-center text-center lg:col-span-2 lg:w-[979px]">
-          <img src={allUpdates} alt="All updates" className="mb-4 h-12 w-12" />
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={() => { void loadMore(); }}
+              disabled={state.loadingMore}
+              className="h-10 min-w-40 rounded-lg border border-gray-300 bg-white px-6 text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50"
+            >
+              {state.loadingMore ? "Loading..." : "Load more"}
+            </button>
+          ) : (
+            <>
+              <img src={allUpdates} alt="All updates" className="mb-4 h-12 w-12" />
 
-          <h3 className="text-[28px] font-semibold leading-tight text-black">
-            You&apos;ve seen all the updates
-          </h3>
+              <h3 className="text-[28px] font-semibold leading-tight text-black">
+                You&apos;ve seen all the updates
+              </h3>
 
-          <p className="mt-2 text-base text-gray-500">
-            You have viewed all new publications
-          </p>
+              <p className="mt-2 text-base text-gray-500">
+                You have viewed all new publications
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

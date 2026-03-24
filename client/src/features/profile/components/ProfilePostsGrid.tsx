@@ -2,9 +2,13 @@ import type { ProfilePostPreview } from "../types/profile.types";
 
 type ProfilePostsGridProps = {
   posts: ProfilePostPreview[];
+  onPostClick: (postId: string) => void;
 };
 
-export function ProfilePostsGrid({ posts }: ProfilePostsGridProps) {
+export function ProfilePostsGrid({
+  posts,
+  onPostClick,
+}: ProfilePostsGridProps) {
   if (posts.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
@@ -20,6 +24,7 @@ export function ProfilePostsGrid({ posts }: ProfilePostsGridProps) {
           key={post.id}
           type="button"
           className="aspect-square overflow-hidden bg-muted"
+          onClick={() => onPostClick(post.id)}
         >
           <img
             src={post.imageUrl}

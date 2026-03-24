@@ -2,6 +2,7 @@ import { http } from "@/shared/api/http";
 import type { ApiResponse } from "@/shared/api/types";
 import { getAuthToken } from "@/lib/auth-storage";
 import axios from "axios";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type { PublicUser, ProfilePostsData } from "../types/profile.types";
 
 type FollowListResponse = ApiResponse<{
@@ -190,8 +191,73 @@ export async function getPostsByUser(userId: string): Promise<ProfilePostsData> 
   return {
     items: res.data.data.map((post) => ({
       id: post.id,
-      imageUrl: post.imageUrl,
+      imageUrl: resolveMediaUrl(post.imageUrl),
     })),
     total: res.data.meta.total,
+  };
+}
+
+type PostDetailsResponse = {
+  ok: boolean;
+  data: {
+    id: string;
+    imageUrl: string;
+    caption: string;
+    createdAt: string;
+    updatedAt: string;
+    likesCount: number;
+    likedByMe: boolean;
+    commentsCount: number;
+    author: {
+      id: string;
+      username: string;
+      avatarUrl?: string | null;
+    };
+  };
+  error: string;
+};
+
+export type ProfilePostDetailsData = {
+  id: string;
+  imageUrl: string;
+  caption: string;
+  createdAt: string;
+  updatedAt: string;
+  likesCount: number;
+  likedByMe: boolean;
+  commentsCount: number;
+  author: {
+    id: string;
+    username: string;
+    avatarUrl?: string | null;
+  };
+};
+
+export async function getPostById(
+  postId: string,
+): Promise<ProfilePostDetailsData> {
+  const res = await http.get<PostDetailsResponse>(`/api/posts/${postId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.data.ok) {
+    throw new Error(res.data.error);
+  }
+
+  return {
+    id: res.data.data.id,
+    imageUrl: resolveMediaUrl(res.data.data.imageUrl),
+    caption: res.data.data.caption,
+    createdAt: res.data.data.createdAt,
+    updatedAt: res.data.data.updatedAt,
+    likesCount: res.data.data.likesCount,
+    likedByMe: res.data.data.likedByMe,
+    commentsCount: res.data.data.commentsCount,
+    author: {
+      ...res.data.data.author,
+      avatarUrl: res.data.data.author.avatarUrl
+        ? resolveMediaUrl(res.data.data.author.avatarUrl)
+        : null,
+    },
   };
 }

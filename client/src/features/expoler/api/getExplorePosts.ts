@@ -2,6 +2,7 @@ import type {
   ExplorePost,
   ExplorePostsResponse,
 } from "../types/explore.types";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
@@ -54,5 +55,10 @@ export async function getExplorePosts(): Promise<ExplorePost[]> {
     throw new Error("Invalid explore posts response shape");
   }
 
-  return shufflePosts(rawData.data);
+  return shufflePosts(
+    rawData.data.map((post) => ({
+      ...post,
+      imageUrl: resolveMediaUrl(post.imageUrl),
+    })),
+  );
 }

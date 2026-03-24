@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
@@ -9,6 +9,7 @@ import { fetchMyProfile } from "@/store/slices/profileSlice";
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const { currentProfile, loading, error } = useAppSelector(
     (state) => state.profile,
@@ -49,7 +50,10 @@ export default function ProfilePage() {
       />
 
       <div className="mt-8 border-t pt-6">
-        <ProfilePostsGrid posts={posts} />
+        <ProfilePostsGrid
+          posts={posts}
+          onPostClick={(postId) => navigate(`/posts/${postId}`)}
+        />
       </div>
     </section>
   );

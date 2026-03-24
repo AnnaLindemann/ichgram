@@ -9,6 +9,7 @@ type MobileBottomNavProps = {
   unreadNotificationsCount: number;
   onSearchClick: () => void;
   onNotificationsClick: () => void;
+  onCreateClick: () => void;
   onRouteItemClick: () => void;
 };
 
@@ -18,7 +19,7 @@ type RouteNavItem = NavItem & {
 };
 
 function isMobileVisibleItem(item: NavItem): boolean {
-  return item.showInMobileBottom !== false;
+  return item.showInMobileBottom !== false && item.id !== "profile";
 }
 
 function isMobileRouteItem(item: NavItem): item is RouteNavItem {
@@ -33,9 +34,10 @@ export function MobileBottomNav({
   unreadNotificationsCount,
   onSearchClick,
   onNotificationsClick,
+  onCreateClick,
   onRouteItemClick,
 }: MobileBottomNavProps) {
-  const items = navItems.filter(isMobileVisibleItem).slice(0, 5);
+  const items = navItems.filter(isMobileVisibleItem);
 
   return (
     <nav
@@ -45,7 +47,7 @@ export function MobileBottomNav({
       )}
       aria-label="Bottom navigation"
     >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5 px-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto grid h-16 max-w-md grid-cols-6 px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const Icon = item.icon;
 
@@ -89,6 +91,23 @@ export function MobileBottomNav({
             );
           }
 
+          if (item.id === "create") {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={onCreateClick}
+                className={cn(
+                  "flex items-center justify-center rounded-xl transition",
+                  "hover:bg-muted"
+                )}
+                aria-label={item.label}
+              >
+                <Icon className="h-6 w-6" />
+              </button>
+            );
+          }
+
           if (isMobileRouteItem(item)) {
             return (
               <NavLink
@@ -109,7 +128,7 @@ export function MobileBottomNav({
             );
           }
 
-          return <div key={item.id} />;
+          return null;
         })}
       </div>
     </nav>

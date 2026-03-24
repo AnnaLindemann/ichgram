@@ -4,9 +4,10 @@ import { Heart, MessageCircle} from "lucide-react";
 
 type FeedPostCardProps = {
   post: FeedPost;
+  onPostClick: (postId: string) => void;
 };
 
-export function FeedPostCard({ post }: FeedPostCardProps) {
+export function FeedPostCard({ post, onPostClick }: FeedPostCardProps) {
   return (
     <article className="overflow-hidden rounded-xl border bg-white">
 <div className="flex items-center justify-between px-3 py-3">
@@ -43,14 +44,19 @@ export function FeedPostCard({ post }: FeedPostCardProps) {
 </div>
 </div>
 
-      <div className="aspect-square w-full bg-gray-100">
+      <button
+        type="button"
+        className="block aspect-square w-full bg-gray-100"
+        onClick={() => onPostClick(post.id)}
+        aria-label="Open post"
+      >
         <img
           src={post.imageUrl}
           alt={post.caption || "Post image"}
           className="h-full w-full object-cover"
           loading="lazy"
         />
-      </div>
+      </button>
 
 <div className="flex items-center gap-4 px-3 pt-3">
   <button type="button" aria-label="Like" className="text-black">
