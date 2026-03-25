@@ -3,6 +3,8 @@ export type FeedPost = {
   imageUrl: string;
   caption: string | null;
   createdAt: string;
+  isFollowingAuthor: boolean;
+  likedByMe: boolean;
 
   author: {
     id: string;

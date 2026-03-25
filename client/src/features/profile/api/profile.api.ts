@@ -36,6 +36,23 @@ type PostsListResponse =
       error: string;
     };
 
+type FollowActionResponse =
+  | {
+      ok: true;
+      data: {
+        id?: string;
+        followerId?: string;
+        followingId?: string;
+        createdAt?: string;
+        updatedAt?: string;
+        message?: string;
+      };
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export type UploadMyAvatarResponse =
   | {
       ok: true;
@@ -71,7 +88,9 @@ export async function getMeProfile(): Promise<ApiResponse<PublicUser>> {
 export async function getUserProfileById(
   userId: string,
 ): Promise<ApiResponse<PublicUser>> {
-  const res = await http.get<ApiResponse<PublicUser>>(`/api/users/${userId}`);
+  const res = await http.get<ApiResponse<PublicUser>>(`/api/users/${userId}`, {
+    headers: getAuthHeaders(),
+  });
 
   return res.data;
 }
@@ -142,6 +161,93 @@ export async function uploadMyAvatar(
   }
 }
 
+export async function followUserById(
+  userId: string,
+): Promise<FollowActionResponse> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    return {
+      ok: false,
+      error: "Unauthorized",
+    };
+  }
+
+  try {
+    const res = await http.post<FollowActionResponse>(
+      `/api/users/${userId}/follow`,
+      {},
+      {
+        headers,
+      },
+    );
+
+    return res.data;
+  } catch (error: unknown) {
+    const message =
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof error.response === "object" &&
+      error.response !== null &&
+      "data" in error.response &&
+      typeof error.response.data === "object" &&
+      error.response.data !== null &&
+      "error" in error.response.data &&
+      typeof error.response.data.error === "string"
+        ? error.response.data.error
+        : "Failed to follow user";
+
+    return {
+      ok: false,
+      error: message,
+    };
+  }
+}
+
+export async function unfollowUserById(
+  userId: string,
+): Promise<FollowActionResponse> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    return {
+      ok: false,
+      error: "Unauthorized",
+    };
+  }
+
+  try {
+    const res = await http.delete<FollowActionResponse>(
+      `/api/users/${userId}/follow`,
+      {
+        headers,
+      },
+    );
+
+    return res.data;
+  } catch (error: unknown) {
+    const message =
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof error.response === "object" &&
+      error.response !== null &&
+      "data" in error.response &&
+      typeof error.response.data === "object" &&
+      error.response.data !== null &&
+      "error" in error.response.data &&
+      typeof error.response.data.error === "string"
+        ? error.response.data.error
+        : "Failed to unfollow user";
+
+    return {
+      ok: false,
+      error: message,
+    };
+  }
+}
+
 export async function getFollowersCount(userId: string): Promise<number> {
   const res = await http.get<FollowListResponse>(`/api/users/${userId}/followers`, {
     params: {
@@ -208,6 +314,7 @@ type PostDetailsResponse = {
     likesCount: number;
     likedByMe: boolean;
     commentsCount: number;
+    isFollowingAuthor?: boolean;
     author: {
       id: string;
       username: string;
@@ -226,6 +333,7 @@ export type ProfilePostDetailsData = {
   likesCount: number;
   likedByMe: boolean;
   commentsCount: number;
+  isFollowingAuthor?: boolean;
   author: {
     id: string;
     username: string;
@@ -253,6 +361,7 @@ export async function getPostById(
     likesCount: res.data.data.likesCount,
     likedByMe: res.data.data.likedByMe,
     commentsCount: res.data.data.commentsCount,
+    isFollowingAuthor: res.data.data.isFollowingAuthor ?? false,
     author: {
       ...res.data.data.author,
       avatarUrl: res.data.data.author.avatarUrl

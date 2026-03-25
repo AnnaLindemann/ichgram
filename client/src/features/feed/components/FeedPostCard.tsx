@@ -1,48 +1,80 @@
-import type { FeedPost } from "../types/feed-post.types";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
-import { Heart, MessageCircle} from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
+
+import type { FeedPost } from "../types/feed-post.types";
 
 type FeedPostCardProps = {
   post: FeedPost;
+  canFollowAuthor: boolean;
+  isSubmittingFollow: boolean;
+  isSubmittingLike: boolean;
   onPostClick: (postId: string) => void;
+  onFollowToggle: (authorId: string) => void;
+  onLikeToggle: (postId: string) => void;
 };
 
-export function FeedPostCard({ post, onPostClick }: FeedPostCardProps) {
+export function FeedPostCard({
+  post,
+  canFollowAuthor,
+  isSubmittingFollow,
+  isSubmittingLike,
+  onPostClick,
+  onFollowToggle,
+  onLikeToggle,
+}: FeedPostCardProps) {
   return (
     <article className="overflow-hidden rounded-xl border bg-white">
-<div className="flex items-center justify-between px-3 py-3">
-  <div className="flex min-w-0 items-center gap-3">
-    {post.author.avatarUrl ? (
-      <img
-        src={post.author.avatarUrl}
-        alt={post.author.username}
-        className="h-8 w-8 rounded-full object-cover"
-      />
-    ) : (
-      <div className="h-8 w-8 rounded-full bg-gray-300" />
-    )}
-<div className="flex min-w-0 items-center gap-1.5 text-sm">
-  <p className="truncate font-medium text-black">
-    {post.author.username}
-  </p>
+      <div className="flex items-center justify-between px-3 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {post.author.avatarUrl ? (
+            <img
+              src={post.author.avatarUrl}
+              alt={post.author.username}
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-gray-300" />
+          )}
 
-  <span className="shrink-0 text-xs text-gray-400">•</span>
+          <div className="flex min-w-0 items-center gap-1.5 text-sm">
+            <p className="truncate font-medium text-black">
+              {post.author.username}
+            </p>
 
-  <p className="shrink-0 text-sm text-gray-500">
-    {formatRelativeTime(post.createdAt)}
-  </p>
+            <span className="shrink-0 text-xs text-gray-400">•</span>
 
-  <span className="shrink-0 text-xs text-gray-400">•</span>
-</div>
+            <p className="shrink-0 text-sm text-gray-500">
+              {formatRelativeTime(post.createdAt)}
+            </p>
 
-<button
-  type="button"
-  className="shrink-0 text-sm font-medium text-sky-500"
->
-  Follow
-</button>
-</div>
-</div>
+            {canFollowAuthor ? (
+              <>
+                <span className="shrink-0 text-xs text-gray-400">•</span>
+
+                {post.isFollowingAuthor ? (
+                  <button
+                    type="button"
+                    onClick={() => onFollowToggle(post.author.id)}
+                    disabled={isSubmittingFollow}
+                    className="shrink-0 text-sm font-medium text-gray-500 disabled:opacity-60"
+                  >
+                    Following
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onFollowToggle(post.author.id)}
+                    disabled={isSubmittingFollow}
+                    className="shrink-0 text-sm font-medium text-sky-500 disabled:opacity-60"
+                  >
+                    {isSubmittingFollow ? "Following..." : "Follow"}
+                  </button>
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
 
       <button
         type="button"
@@ -58,15 +90,24 @@ export function FeedPostCard({ post, onPostClick }: FeedPostCardProps) {
         />
       </button>
 
-<div className="flex items-center gap-4 px-3 pt-3">
-  <button type="button" aria-label="Like" className="text-black">
-    <Heart className="h-7 w-7" strokeWidth={1.75} />
-  </button>
+      <div className="flex items-center gap-4 px-3 pt-3">
+        <button
+          type="button"
+          aria-label={post.likedByMe ? "Unlike post" : "Like post"}
+          onClick={() => onLikeToggle(post.id)}
+          disabled={isSubmittingLike}
+          className="text-black disabled:opacity-60"
+        >
+          <Heart
+            className={`h-7 w-7 ${post.likedByMe ? "fill-red-500 text-red-500" : ""}`}
+            strokeWidth={1.75}
+          />
+        </button>
 
-  <button type="button" aria-label="Comment" className="text-black">
-    <MessageCircle className="h-7 w-7 scale-x-[-1]" strokeWidth={1.75} />
-  </button>
-</div>
+        <button type="button" aria-label="Comment" className="text-black">
+          <MessageCircle className="h-7 w-7 scale-x-[-1]" strokeWidth={1.75} />
+        </button>
+      </div>
 
       <div className="px-3 pb-3 pt-2 text-sm">
         <p className="font-medium text-black">{post.likesCount} likes</p>

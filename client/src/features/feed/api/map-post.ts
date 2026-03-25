@@ -8,6 +8,8 @@ export function mapPostDtoToFeedPost(dto: PostDto): FeedPost {
     imageUrl: resolveMediaUrl(dto.imageUrl),
     caption: dto.caption ?? null,
     createdAt: dto.createdAt,
+    isFollowingAuthor: dto.isFollowingAuthor ?? false,
+    likedByMe: dto.likedByMe,
     author: {
       id: dto.author.id,
       username: dto.author.username,

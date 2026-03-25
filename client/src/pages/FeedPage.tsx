@@ -1,11 +1,30 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import allUpdates from "../assets/icons/allUpdates.svg";
+import { FeedPostCardSkeleton } from "../features/feed/components/FeedPostCardSkeleton";
 import { getPosts } from "../features/feed/api/feed.api";
 import { mapPostDtoToFeedPost } from "../features/feed/api/map-post";
 import { FeedPostCard } from "../features/feed/components/FeedPostCard";
 import type { FeedPost } from "../features/feed/types/feed-post.types";
-import allUpdates from "../assets/icons/allUpdates.svg";
-import { FeedPostCardSkeleton } from "../features/feed/components/FeedPostCardSkeleton";
+import {
+  followUserById,
+  unfollowUserById,
+} from "@/features/profile/api/profile.api";
+import {
+  likePostById,
+  unlikePostById,
+} from "@/features/posts/api/post-likes.api";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { applyFollowState } from "@/store/slices/profileSlice";
+import {
+  seedFollowRelations,
+  setFollowRelation,
+} from "@/store/slices/followsSlice";
+import {
+  seedPostLikes,
+  setPostLikeState,
+} from "@/store/slices/postLikesSlice";
 
 type UiState =
   | { status: "loading" }
@@ -24,7 +43,24 @@ const FEED_GRID_CLASS =
 
 export default function FeedPage() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const currentProfile = useAppSelector((state) => state.profile.currentProfile);
+  const followRelations = useAppSelector((state) => state.follows.relations);
+  const likedByPostId = useAppSelector((state) => state.postLikes.likedByPostId);
+  const likesCountByPostId = useAppSelector(
+    (state) => state.postLikes.likesCountByPostId,
+  );
+
   const [state, setState] = useState<UiState>({ status: "loading" });
+  const [followError, setFollowError] = useState("");
+  const [likeError, setLikeError] = useState("");
+  const [submittingAuthorIds, setSubmittingAuthorIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [submittingLikeByPostId, setSubmittingLikeByPostId] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     let isMounted = true;
@@ -49,9 +85,32 @@ export default function FeedPage() {
           return;
         }
 
+        const mappedPosts: FeedPost[] = resp.data.map((dto) =>
+          mapPostDtoToFeedPost(dto),
+        );
+
+        dispatch(
+          seedFollowRelations(
+            mappedPosts.map((p) => ({
+              userId: p.author.id,
+              isFollowing: p.isFollowingAuthor,
+            })),
+          ),
+        );
+
+        dispatch(
+          seedPostLikes(
+            mappedPosts.map((p) => ({
+              postId: p.id,
+              likedByMe: p.likedByMe,
+              likesCount: p.likesCount,
+            })),
+          ),
+        );
+
         setState({
           status: "ready",
-          posts: resp.data.map(mapPostDtoToFeedPost),
+          posts: mappedPosts,
           page: resp.page,
           totalPages: resp.totalPages,
           loadingMore: false,
@@ -70,7 +129,7 @@ export default function FeedPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [dispatch]);
 
   async function loadMore() {
     if (state.status !== "ready" || state.loadingMore) {
@@ -80,27 +139,196 @@ export default function FeedPage() {
     const { posts, page, totalPages } = state;
     const nextPage = page + 1;
 
-    setState({ status: "ready", posts, page, totalPages, loadingMore: true });
+    setState({
+      status: "ready",
+      posts,
+      page,
+      totalPages,
+      loadingMore: true,
+    });
 
     try {
       const resp = await getPosts(nextPage);
 
       if (!resp.ok) {
-        // Restore previous state on error, button becomes clickable again
-        setState({ status: "ready", posts, page, totalPages, loadingMore: false });
+        setState({
+          status: "ready",
+          posts,
+          page,
+          totalPages,
+          loadingMore: false,
+        });
         return;
       }
 
+      const mappedPosts: FeedPost[] = resp.data.map((dto) =>
+        mapPostDtoToFeedPost(dto),
+      );
+
+      dispatch(
+        seedFollowRelations(
+          mappedPosts.map((p) => ({
+            userId: p.author.id,
+            isFollowing: p.isFollowingAuthor,
+          })),
+        ),
+      );
+
+      dispatch(
+        seedPostLikes(
+          mappedPosts.map((p) => ({
+            postId: p.id,
+            likedByMe: p.likedByMe,
+            likesCount: p.likesCount,
+          })),
+        ),
+      );
+
       setState({
         status: "ready",
-        posts: [...posts, ...resp.data.map(mapPostDtoToFeedPost)],
+        posts: [...posts, ...mappedPosts],
         page: resp.page,
         totalPages: resp.totalPages,
         loadingMore: false,
       });
     } catch {
-      setState({ status: "ready", posts, page, totalPages, loadingMore: false });
+      setState({
+        status: "ready",
+        posts,
+        page,
+        totalPages,
+        loadingMore: false,
+      });
     }
+  }
+
+  async function handleFollowToggle(authorId: string) {
+    if (state.status !== "ready" || submittingAuthorIds[authorId]) {
+      return;
+    }
+
+    if (currentProfile?.user.id === authorId) {
+      return;
+    }
+
+    const targetPost = state.posts.find((post) => post.author.id === authorId);
+
+    if (!targetPost) {
+      return;
+    }
+
+    const currentlyFollowing =
+      followRelations[authorId] ?? targetPost.isFollowingAuthor;
+
+    setFollowError("");
+
+    dispatch(
+      setFollowRelation({
+        userId: authorId,
+        isFollowing: !currentlyFollowing,
+      }),
+    );
+
+    setSubmittingAuthorIds((prev) => ({ ...prev, [authorId]: true }));
+
+    if (currentlyFollowing) {
+      const result = await unfollowUserById(authorId);
+
+      if (!result.ok) {
+        if (result.error === "follow relation not found") {
+          dispatch(setFollowRelation({ userId: authorId, isFollowing: false }));
+        } else {
+          dispatch(setFollowRelation({ userId: authorId, isFollowing: true }));
+          setFollowError(result.error);
+        }
+      } else {
+        dispatch(
+          applyFollowState({
+            targetUserId: authorId,
+            isFollowing: false,
+          }),
+        );
+      }
+    } else {
+      const result = await followUserById(authorId);
+
+      if (!result.ok) {
+        if (result.error === "already following this user") {
+          dispatch(setFollowRelation({ userId: authorId, isFollowing: true }));
+        } else {
+          dispatch(setFollowRelation({ userId: authorId, isFollowing: false }));
+          setFollowError(result.error);
+        }
+      } else {
+        dispatch(
+          applyFollowState({
+            targetUserId: authorId,
+            isFollowing: true,
+          }),
+        );
+      }
+    }
+
+    setSubmittingAuthorIds((prev) => ({ ...prev, [authorId]: false }));
+  }
+
+  async function handleLikeToggle(postId: string) {
+    if (state.status !== "ready" || submittingLikeByPostId[postId]) {
+      return;
+    }
+
+    const targetPost = state.posts.find((post) => post.id === postId);
+
+    if (!targetPost) {
+      return;
+    }
+
+    const currentLikedByMe = likedByPostId[postId] ?? targetPost.likedByMe;
+    const currentLikesCount = likesCountByPostId[postId] ?? targetPost.likesCount;
+
+    const optimisticLikedByMe = !currentLikedByMe;
+    const optimisticLikesCount = optimisticLikedByMe
+      ? currentLikesCount + 1
+      : Math.max(0, currentLikesCount - 1);
+
+    setLikeError("");
+    setSubmittingLikeByPostId((prev) => ({ ...prev, [postId]: true }));
+
+    dispatch(
+      setPostLikeState({
+        postId,
+        likedByMe: optimisticLikedByMe,
+        likesCount: optimisticLikesCount,
+      }),
+    );
+
+    const result = currentLikedByMe
+      ? await unlikePostById(postId)
+      : await likePostById(postId);
+
+    if (!result.ok) {
+      dispatch(
+        setPostLikeState({
+          postId,
+          likedByMe: currentLikedByMe,
+          likesCount: currentLikesCount,
+        }),
+      );
+
+      setLikeError(result.error);
+      setSubmittingLikeByPostId((prev) => ({ ...prev, [postId]: false }));
+      return;
+    }
+
+    dispatch(
+      setPostLikeState({
+        postId,
+        likedByMe: result.liked,
+        likesCount: result.likesCount,
+      }),
+    );
+
+    setSubmittingLikeByPostId((prev) => ({ ...prev, [postId]: false }));
   }
 
   if (state.status === "loading") {
@@ -129,21 +357,50 @@ export default function FeedPage() {
 
   return (
     <div className="w-full">
+      {followError ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {followError}
+        </div>
+      ) : null}
+
+      {likeError ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {likeError}
+        </div>
+      ) : null}
+
       <div className={FEED_GRID_CLASS}>
-        {state.posts.map((post) => (
-          <div key={post.id} className="w-full lg:w-[470px]">
-            <FeedPostCard
-              post={post}
-              onPostClick={(postId) => navigate(`/posts/${postId}`)}
-            />
-          </div>
-        ))}
+        {state.posts.map((post) => {
+          const effectivePost: FeedPost = {
+            ...post,
+            isFollowingAuthor:
+              followRelations[post.author.id] ?? post.isFollowingAuthor,
+            likedByMe: likedByPostId[post.id] ?? post.likedByMe,
+            likesCount: likesCountByPostId[post.id] ?? post.likesCount,
+          };
+
+          return (
+            <div key={post.id} className="w-full lg:w-[470px]">
+              <FeedPostCard
+                post={effectivePost}
+                canFollowAuthor={currentProfile?.user.id !== post.author.id}
+                isSubmittingFollow={Boolean(submittingAuthorIds[post.author.id])}
+                isSubmittingLike={Boolean(submittingLikeByPostId[post.id])}
+                onPostClick={(postIdValue) => navigate(`/posts/${postIdValue}`)}
+                onFollowToggle={handleFollowToggle}
+                onLikeToggle={handleLikeToggle}
+              />
+            </div>
+          );
+        })}
 
         <div className="mt-4 flex flex-col items-center text-center lg:col-span-2 lg:w-[979px]">
           {hasMore ? (
             <button
               type="button"
-              onClick={() => { void loadMore(); }}
+              onClick={() => {
+                void loadMore();
+              }}
               disabled={state.loadingMore}
               className="h-10 min-w-40 rounded-lg border border-gray-300 bg-white px-6 text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50"
             >
@@ -151,7 +408,11 @@ export default function FeedPage() {
             </button>
           ) : (
             <>
-              <img src={allUpdates} alt="All updates" className="mb-4 h-12 w-12" />
+              <img
+                src={allUpdates}
+                alt="All updates"
+                className="mb-4 h-12 w-12"
+              />
 
               <h3 className="text-[28px] font-semibold leading-tight text-black">
                 You&apos;ve seen all the updates

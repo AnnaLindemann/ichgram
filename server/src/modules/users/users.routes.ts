@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { asyncHandler } from "../../shared/asyncHandler.js";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
+import { optionalAuth } from "../../middlewares/optionalAuth.middleware.js";
 import {
   getMe,
   updateMe,
@@ -25,7 +26,7 @@ export const usersRouter = Router();
 usersRouter.get("/me", requireAuth, asyncHandler(getMe));
 usersRouter.patch("/me", requireAuth, asyncHandler(updateMe));
 
-// Wrap multer so its errors are converted to HttpError and handled by errorMiddleware
+
 function handleMulterUpload(req: Request, res: Response, next: NextFunction): void {
   uploadSingleImage(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError) {
@@ -48,4 +49,4 @@ usersRouter.get("/:id/followers", asyncHandler(getFollowersController));
 usersRouter.get("/:id/following", asyncHandler(getFollowingController));
 
 usersRouter.get("/", asyncHandler(listUsers));
-usersRouter.get("/:id", asyncHandler(getUserById));
+usersRouter.get("/:id", optionalAuth, asyncHandler(getUserById));

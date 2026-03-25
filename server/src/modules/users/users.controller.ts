@@ -5,6 +5,7 @@ import { toPublicUser, toSearchUserDto } from "./users.type.js";
 import { updateMeSchema, searchUsersQuerySchema } from "./users.schemas.js";
 import { escapeRegex } from "../../shared/escapeRegex.js";
 import { HttpError } from "../../shared/http-error.js";
+import { isFollowing } from "../follows/follows.service.js";
 
 export async function getUserById(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
@@ -23,9 +24,19 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
     throw new HttpError(404, "user not found");
   }
 
+  const viewerId = req.user?.id;
+  const targetId = String(user._id);
+  const followingStatus =
+    viewerId !== undefined && viewerId !== targetId
+      ? await isFollowing(viewerId, targetId)
+      : false;
+
   res.status(200).json({
     ok: true,
-    data: toPublicUser(user),
+    data: {
+      ...toPublicUser(user),
+      isFollowing: followingStatus,
+    },
   });
 }
 

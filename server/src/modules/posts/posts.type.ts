@@ -20,6 +20,7 @@ export type PostDto = {
   likesCount: number;
   likedByMe: boolean;
   commentsCount: number;
+  isFollowingAuthor: boolean;
   author: PostAuthorDto;
 };
 

@@ -7,13 +7,13 @@ import FeedPage from "./pages/FeedPage";
 import ProfilePage from "./pages/ProfilePage";
 import MessagesPage from "./pages/MessagesPage";
 import ExplorePage from "./pages/ExplorePage";
-import CreatePostPage from "./pages/CreatePostPage";
 import RegisterPage from "./pages/RegisterPage";
 import TroubleLoggingInPage from "./pages/TroubleLoggingInPage";
 import LoginPage from "./pages/LoginPage";
 import PostDetailsPage from "./pages/PostDetailsPage";
 import EditProfilePage from "./pages/EditProfilePage";
 import OtherProfilePage from "./pages/OtherProfilePage";
+import EditPostPage from "./pages/EditPostPage";
 
 
 export default function App() {
@@ -30,11 +30,11 @@ export default function App() {
         <Route path="/" element={<FeedPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/messages" element={<MessagesPage />} />
-        <Route path="/create" element={<CreatePostPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/edit" element={<EditProfilePage />} />
         <Route path="/profile/:id" element={<OtherProfilePage />} />       
         <Route path="/posts/:id" element={<PostDetailsPage />} />
+        <Route path="/posts/:id/edit" element={<EditPostPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

@@ -12,6 +12,7 @@ import { getLikesMetaForPosts } from "../likes/likes.service.js";
 import { HttpError } from "../../shared/http-error.js";
 import { getCommentsCountForPosts } from "../comments/comments.service.js";
 import { buildPostDto } from "./posts.mapper.js";
+import { isFollowing, getFollowingSet } from "../follows/follows.service.js";
 
 export async function createPost(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -62,6 +63,7 @@ const data = buildPostDto({
   likesCount: 0,
   likedByMe: false,
   commentsCount: 0,
+  isFollowingAuthor: false,
 });
 
 res.status(201).json({
@@ -91,10 +93,14 @@ if (!post) {
 
 const viewerId = req.user?.id;
 const postId = String(post._id);
+const authorId = (post.author as unknown as { _id: { toString(): string } })._id.toString();
 
-const [likesMeta, commentsMeta] = await Promise.all([
+const [likesMeta, commentsMeta, isFollowingAuthor] = await Promise.all([
   getLikesMetaForPosts([postId], viewerId),
   getCommentsCountForPosts([postId]),
+  viewerId !== undefined && viewerId !== authorId
+    ? isFollowing(viewerId, authorId)
+    : Promise.resolve(false),
 ]);
 
 const likeMeta = likesMeta[postId];
@@ -104,6 +110,7 @@ const data = buildPostDto({
   likesCount: likeMeta?.likesCount ?? 0,
   likedByMe: likeMeta?.likedByMe ?? false,
   commentsCount: commentsMeta[postId] ?? 0,
+  isFollowingAuthor,
 });
 
 res.status(200).json({ ok: true, data });
@@ -138,13 +145,29 @@ const [posts, total] = await Promise.all([
 const postIds = posts.map((post) => String(post._id));
 const viewerId = req.user?.id;
 
-const [likesMeta, commentsMeta] = await Promise.all([
+// Collect unique author IDs for a single batch follow lookup.
+const authorIds = [
+  ...new Set(
+    posts.map(
+      (post) =>
+        (post.author as unknown as { _id: { toString(): string } })._id.toString(),
+    ),
+  ),
+];
+
+const [likesMeta, commentsMeta, followingSet] = await Promise.all([
   getLikesMetaForPosts(postIds, viewerId),
   getCommentsCountForPosts(postIds),
+  viewerId !== undefined
+    ? getFollowingSet(viewerId, authorIds)
+    : Promise.resolve(new Set<string>()),
 ]);
 
 const data: PostDto[] = posts.map((post) => {
   const postId = post._id.toString();
+  const postAuthorId = (
+    post.author as unknown as { _id: { toString(): string } }
+  )._id.toString();
   const likeMeta = likesMeta[postId];
 
   return buildPostDto({
@@ -152,6 +175,10 @@ const data: PostDto[] = posts.map((post) => {
     likesCount: likeMeta?.likesCount ?? 0,
     likedByMe: likeMeta?.likedByMe ?? false,
     commentsCount: commentsMeta[postId] ?? 0,
+    isFollowingAuthor:
+      viewerId !== undefined && viewerId !== postAuthorId
+        ? followingSet.has(postAuthorId)
+        : false,
   });
 });
 
@@ -190,6 +217,11 @@ export async function updatePostCaption(req: Request, res: Response): Promise<vo
   }
 
   const { caption } = updatePostSchema.parse(req.body);
+  const newImageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+  if (caption === undefined && newImageUrl === undefined) {
+    throw new HttpError(400, "caption or image is required");
+  }
 
   const post = await PostModel.findById(id).exec();
 
@@ -201,7 +233,12 @@ export async function updatePostCaption(req: Request, res: Response): Promise<vo
     throw new HttpError(403, "forbidden");
   }
 
-post.caption = caption;
+if (caption !== undefined) {
+  post.caption = caption;
+}
+if (newImageUrl !== undefined) {
+  post.imageUrl = newImageUrl;
+}
 await post.save();
 
 const populatedPost = await PostModel.findById(post._id)
@@ -227,6 +264,7 @@ const data = buildPostDto({
   likesCount: likeMeta?.likesCount ?? 0,
   likedByMe: likeMeta?.likedByMe ?? false,
   commentsCount: commentsMeta[postId] ?? 0,
+  isFollowingAuthor: false,
 });
 
 res.status(200).json({ ok: true, data });

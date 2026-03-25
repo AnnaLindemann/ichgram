@@ -1,4 +1,15 @@
 import { http } from "@/shared/api/http";
+import { getAuthToken } from "@/lib/auth-storage";
+
+function getAuthHeaders(): Record<string, string> | undefined {
+  const token = getAuthToken();
+
+  if (!token) {
+    return undefined;
+  }
+
+  return { Authorization: `Bearer ${token}` };
+}
 
 export type PostAuthorDto = {
   id: string;
@@ -16,10 +27,10 @@ export type PostDto = {
   likesCount: number;
   likedByMe: boolean;
   commentsCount: number;
+  isFollowingAuthor: boolean;
   author: PostAuthorDto;
 };
 
-// Full backend response shape for GET /api/posts (includes pagination meta)
 type ListPostsApiResponse =
   | {
       ok: true;
@@ -39,8 +50,12 @@ export type GetPostsResult =
   | { ok: true; data: PostDto[]; page: number; totalPages: number }
   | { ok: false; error: string };
 
-export async function getPosts(page = 1, authorId?: string): Promise<GetPostsResult> {
+export async function getPosts(
+  page = 1,
+  authorId?: string,
+): Promise<GetPostsResult> {
   const res = await http.get<ListPostsApiResponse>("/api/posts", {
+    headers: getAuthHeaders(),
     params: {
       limit: 10,
       page,

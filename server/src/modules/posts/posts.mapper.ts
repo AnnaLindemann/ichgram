@@ -14,6 +14,7 @@ type BuildPostDtoParams = {
   likesCount: number;
   likedByMe: boolean;
   commentsCount: number;
+  isFollowingAuthor: boolean;
 };
 
 export function buildPostDto({
@@ -21,6 +22,7 @@ export function buildPostDto({
   likesCount,
   likedByMe,
   commentsCount,
+  isFollowingAuthor,
 }: BuildPostDtoParams): PostDto {
   const author = post.author as unknown as PopulatedAuthor;
 
@@ -33,6 +35,7 @@ export function buildPostDto({
     likesCount,
     likedByMe,
     commentsCount,
+    isFollowingAuthor,
     author: {
       id: author._id.toString(),
       username: author.username,

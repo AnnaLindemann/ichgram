@@ -104,6 +104,43 @@ export async function unfollowUser(
   };
 }
 
+export async function isFollowing(
+  currentUserId: string,
+  targetUserId: string,
+): Promise<boolean> {
+  if (currentUserId === targetUserId) {
+    return false;
+  }
+
+  if (!mongoose.isValidObjectId(currentUserId) || !mongoose.isValidObjectId(targetUserId)) {
+    return false;
+  }
+
+  const follow = await FollowModel.findOne({
+    followerId: currentUserId,
+    followingId: targetUserId,
+  }).exec();
+
+  return follow !== null;
+}
+
+// Returns the set of targetUserIds that viewerId follows — single DB query.
+export async function getFollowingSet(
+  viewerId: string,
+  targetUserIds: string[],
+): Promise<Set<string>> {
+  if (!mongoose.isValidObjectId(viewerId) || targetUserIds.length === 0) {
+    return new Set();
+  }
+
+  const follows = await FollowModel.find({
+    followerId: viewerId,
+    followingId: { $in: targetUserIds },
+  }).exec();
+
+  return new Set(follows.map((f) => f.followingId.toString()));
+}
+
 export async function getFollowers(
   userId: string,
   options: FollowListOptions

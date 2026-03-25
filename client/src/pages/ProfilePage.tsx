@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
@@ -10,16 +10,21 @@ import { fetchMyProfile } from "@/store/slices/profileSlice";
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation()
 
   const { currentProfile, loading, error } = useAppSelector(
     (state) => state.profile,
   );
 
-  useEffect(() => {
-    void dispatch(fetchMyProfile());
-  }, [dispatch]);
+ useEffect(() => {
+  if (location.pathname !== "/profile") {
+    return;
+  }
 
-  if (loading) {
+  void dispatch(fetchMyProfile());
+}, [dispatch, location.key, location.pathname]);
+
+ if (loading && !currentProfile) {
     return <div className="p-4">Loading profile...</div>;
   }
 

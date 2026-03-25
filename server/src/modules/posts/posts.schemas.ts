@@ -29,7 +29,8 @@ export const updatePostSchema = z.object({
   caption: z
     .string()
     .trim()
-    .max(200, "caption must be less than or equal to 200 characters"),
+    .max(200, "caption must be less than or equal to 200 characters")
+    .optional(),
 });
 
 export const listPostsQuerySchema = z.object({

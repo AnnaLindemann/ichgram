@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
   getFollowersCount,
@@ -100,6 +100,11 @@ export const fetchUserProfile = createAsyncThunk<
   }
 });
 
+type ApplyFollowStatePayload = {
+  targetUserId: string;
+  isFollowing: boolean;
+};
+
 const profileSlice = createSlice({
   name: "profile",
   initialState,
@@ -109,6 +114,30 @@ const profileSlice = createSlice({
     },
     clearProfileError(state) {
       state.error = null;
+    },
+    applyFollowState(state, action: PayloadAction<ApplyFollowStatePayload>) {
+      const { targetUserId, isFollowing } = action.payload;
+
+      if (
+        state.viewedProfile &&
+        state.viewedProfile.user.id === targetUserId
+      ) {
+        state.viewedProfile.user.isFollowing = isFollowing;
+
+        state.viewedProfile.stats.followersCount += isFollowing ? 1 : -1;
+
+        if (state.viewedProfile.stats.followersCount < 0) {
+          state.viewedProfile.stats.followersCount = 0;
+        }
+      }
+
+      if (state.currentProfile) {
+        state.currentProfile.stats.followingCount += isFollowing ? 1 : -1;
+
+        if (state.currentProfile.stats.followingCount < 0) {
+          state.currentProfile.stats.followingCount = 0;
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -141,6 +170,10 @@ const profileSlice = createSlice({
   },
 });
 
-export const { clearViewedProfile, clearProfileError } = profileSlice.actions;
+export const {
+  clearViewedProfile,
+  clearProfileError,
+  applyFollowState,
+} = profileSlice.actions;
 
 export default profileSlice.reducer;

@@ -11,6 +11,7 @@ export type PublicUser = {
   role: UserRole;
   createdAt: string | null;
   updatedAt: string | null;
+  isFollowing?: boolean;
 };
 
 export type ProfileStats = {
