@@ -25,6 +25,7 @@ import {
   seedPostLikes,
   setPostLikeState,
 } from "@/store/slices/postLikesSlice";
+import { seedPostComments } from "@/store/slices/postCommentsSlice";
 
 type UiState =
   | { status: "loading" }
@@ -50,6 +51,9 @@ export default function FeedPage() {
   const likedByPostId = useAppSelector((state) => state.postLikes.likedByPostId);
   const likesCountByPostId = useAppSelector(
     (state) => state.postLikes.likesCountByPostId,
+  );
+  const commentsCountByPostId = useAppSelector(
+    (state) => state.postComments.commentsCountByPostId,
   );
 
   const [state, setState] = useState<UiState>({ status: "loading" });
@@ -104,6 +108,15 @@ export default function FeedPage() {
               postId: p.id,
               likedByMe: p.likedByMe,
               likesCount: p.likesCount,
+            })),
+          ),
+        );
+
+        dispatch(
+          seedPostComments(
+            mappedPosts.map((p) => ({
+              postId: p.id,
+              commentsCount: p.commentsCount,
             })),
           ),
         );
@@ -180,6 +193,15 @@ export default function FeedPage() {
             postId: p.id,
             likedByMe: p.likedByMe,
             likesCount: p.likesCount,
+          })),
+        ),
+      );
+
+      dispatch(
+        seedPostComments(
+          mappedPosts.map((p) => ({
+            postId: p.id,
+            commentsCount: p.commentsCount,
           })),
         ),
       );
@@ -377,6 +399,7 @@ export default function FeedPage() {
               followRelations[post.author.id] ?? post.isFollowingAuthor,
             likedByMe: likedByPostId[post.id] ?? post.likedByMe,
             likesCount: likesCountByPostId[post.id] ?? post.likesCount,
+            commentsCount: commentsCountByPostId[post.id] ?? post.commentsCount,
           };
 
           return (
@@ -387,9 +410,10 @@ export default function FeedPage() {
                 isSubmittingFollow={Boolean(submittingAuthorIds[post.author.id])}
                 isSubmittingLike={Boolean(submittingLikeByPostId[post.id])}
                 onPostClick={(postIdValue) => navigate(`/posts/${postIdValue}`)}
+                onCommentClick={(postIdValue) => navigate(`/posts/${postIdValue}`)}
                 onFollowToggle={handleFollowToggle}
                 onLikeToggle={handleLikeToggle}
-              />
+                            />
             </div>
           );
         })}

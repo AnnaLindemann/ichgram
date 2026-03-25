@@ -9,6 +9,7 @@ type FeedPostCardProps = {
   isSubmittingFollow: boolean;
   isSubmittingLike: boolean;
   onPostClick: (postId: string) => void;
+  onCommentClick: (postId: string) => void;
   onFollowToggle: (authorId: string) => void;
   onLikeToggle: (postId: string) => void;
 };
@@ -19,6 +20,7 @@ export function FeedPostCard({
   isSubmittingFollow,
   isSubmittingLike,
   onPostClick,
+  onCommentClick,
   onFollowToggle,
   onLikeToggle,
 }: FeedPostCardProps) {
@@ -104,7 +106,12 @@ export function FeedPostCard({
           />
         </button>
 
-        <button type="button" aria-label="Comment" className="text-black">
+        <button
+          type="button"
+          aria-label="Comment"
+          className="text-black"
+          onClick={() => onCommentClick(post.id)}
+        >
           <MessageCircle className="h-7 w-7 scale-x-[-1]" strokeWidth={1.75} />
         </button>
       </div>
@@ -117,9 +124,13 @@ export function FeedPostCard({
           {post.caption}
         </p>
 
-        <p className="mt-1 text-xs text-gray-500">
+        <button
+          type="button"
+          onClick={() => onCommentClick(post.id)}
+          className="mt-1 text-xs text-gray-500"
+        >
           View all comments ({post.commentsCount})
-        </p>
+        </button>
       </div>
     </article>
   );

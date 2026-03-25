@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Heart, MessageCircle } from "lucide-react";
 
@@ -14,10 +14,25 @@ import {
   likePostById,
   unlikePostById,
 } from "@/features/posts/api/post-likes.api";
+import {
+  createComment,
+  deleteCommentById,
+  getCommentsByPostId,
+  updateCommentById,
+} from "@/features/comments/api/comments.api";
+import type { CommentDto } from "@/features/comments/types/comments.types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { applyFollowState } from "@/store/slices/profileSlice";
-import { seedFollowRelations, setFollowRelation } from "@/store/slices/followsSlice";
+import {
+  seedFollowRelations,
+  setFollowRelation,
+} from "@/store/slices/followsSlice";
 import { seedPostLikes, setPostLikeState } from "@/store/slices/postLikesSlice";
+import {
+  decrementPostCommentsCount,
+  incrementPostCommentsCount,
+  seedPostComments,
+} from "@/store/slices/postCommentsSlice";
 
 function formatPostDate(value: string) {
   const date = new Date(value);
@@ -48,8 +63,21 @@ export default function PostDetailsPage() {
   const likesCountByPostId = useAppSelector(
     (state) => state.postLikes.likesCountByPostId,
   );
+  const commentsCountByPostId = useAppSelector(
+    (state) => state.postComments.commentsCountByPostId,
+  );
+
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const [post, setPost] = useState<ProfilePostDetailsData | null>(null);
+  const [comments, setComments] = useState<CommentDto[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentInput, setCommentInput] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [savingCommentId, setSavingCommentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -94,6 +122,15 @@ export default function PostDetailsPage() {
               },
             ]),
           );
+
+          dispatch(
+            seedPostComments([
+              {
+                postId: data.id,
+                commentsCount: data.commentsCount,
+              },
+            ]),
+          );
         }
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -114,6 +151,38 @@ export default function PostDetailsPage() {
   }, [id, dispatch]);
 
   useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadComments = async () => {
+      setCommentsLoading(true);
+
+      const result = await getCommentsByPostId(id);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (result.ok) {
+        setComments(result.data);
+      } else {
+        setComments([]);
+      }
+
+      setCommentsLoading(false);
+    };
+
+    void loadComments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") {
         return;
@@ -126,7 +195,22 @@ export default function PostDetailsPage() {
         return;
       }
 
-      if (!isDeleting && !isSubmittingFollow && !isSubmittingLike) {
+      if (editingCommentId) {
+        if (!savingCommentId) {
+          setEditingCommentId(null);
+          setEditingContent("");
+        }
+        return;
+      }
+
+      if (
+        !isDeleting &&
+        !isSubmittingFollow &&
+        !isSubmittingLike &&
+        !isSubmittingComment &&
+        !deletingCommentId &&
+        !savingCommentId
+      ) {
         navigate(-1);
       }
     };
@@ -136,10 +220,27 @@ export default function PostDetailsPage() {
     return () => {
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [navigate, isActionsOpen, isDeleting, isSubmittingFollow, isSubmittingLike]);
+  }, [
+    navigate,
+    isActionsOpen,
+    isDeleting,
+    isSubmittingFollow,
+    isSubmittingLike,
+    isSubmittingComment,
+    editingCommentId,
+    savingCommentId,
+    deletingCommentId,
+  ]);
 
   const handleClose = () => {
-    if (isDeleting || isSubmittingFollow || isSubmittingLike) {
+    if (
+      isDeleting ||
+      isSubmittingFollow ||
+      isSubmittingLike ||
+      isSubmittingComment ||
+      deletingCommentId ||
+      savingCommentId
+    ) {
       return;
     }
 
@@ -308,6 +409,112 @@ export default function PostDetailsPage() {
     setIsSubmittingLike(false);
   };
 
+  const handleCommentIconClick = () => {
+    commentInputRef.current?.focus();
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!post || isSubmittingComment) {
+      return;
+    }
+
+    const trimmedComment = commentInput.trim();
+
+    if (trimmedComment === "") {
+      return;
+    }
+
+    setError("");
+    setIsSubmittingComment(true);
+
+    const result = await createComment(post.id, { content: trimmedComment });
+
+    if (!result.ok) {
+      setError(result.error);
+      setIsSubmittingComment(false);
+      return;
+    }
+
+    setComments((prev) => [...prev, result.data]);
+    setCommentInput("");
+    dispatch(incrementPostCommentsCount({ postId: post.id }));
+
+    setIsSubmittingComment(false);
+  };
+
+  const handleStartEditComment = (comment: CommentDto) => {
+    setEditingCommentId(comment.id);
+    setEditingContent(comment.content);
+    setError("");
+  };
+
+  const handleCancelEditComment = () => {
+    if (savingCommentId) {
+      return;
+    }
+
+    setEditingCommentId(null);
+    setEditingContent("");
+  };
+
+  const handleSaveEditComment = async (commentId: string) => {
+    const trimmedContent = editingContent.trim();
+
+    if (trimmedContent === "" || savingCommentId) {
+      return;
+    }
+
+    setError("");
+    setSavingCommentId(commentId);
+
+    const result = await updateCommentById(commentId, {
+      content: trimmedContent,
+    });
+
+    if (!result.ok) {
+      setError(result.error);
+      setSavingCommentId(null);
+      return;
+    }
+
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? result.data : comment,
+      ),
+    );
+
+    setEditingCommentId(null);
+    setEditingContent("");
+    setSavingCommentId(null);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!post || deletingCommentId) {
+      return;
+    }
+
+    setError("");
+    setDeletingCommentId(commentId);
+
+    const result = await deleteCommentById(commentId);
+
+    if (!result.ok) {
+      setError(result.error);
+      setDeletingCommentId(null);
+      return;
+    }
+
+    setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+
+    if (editingCommentId === commentId) {
+      setEditingCommentId(null);
+      setEditingContent("");
+    }
+
+    dispatch(decrementPostCommentsCount({ postId: post.id }));
+    setDeletingCommentId(null);
+  };
+
   const isOwner = currentProfile?.user.id === post?.author.id;
   const showFollowSection = !!post && !isOwner;
 
@@ -321,6 +528,10 @@ export default function PostDetailsPage() {
 
   const effectiveLikesCount = post
     ? (likesCountByPostId[post.id] ?? post.likesCount)
+    : 0;
+
+  const effectiveCommentsCount = post
+    ? (commentsCountByPostId[post.id] ?? post.commentsCount)
     : 0;
 
   return (
@@ -442,8 +653,123 @@ export default function PostDetailsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 space-y-2 text-sm text-[#8e8e8e]">
-                    <p>{post.commentsCount} comments</p>
+                  <div className="mt-6">
+                    {commentsLoading ? (
+                      <p className="text-sm text-[#8e8e8e]">Loading comments...</p>
+                    ) : comments.length === 0 ? (
+                      <p className="text-sm text-[#8e8e8e]">No comments yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {comments.map((comment) => {
+                          const isMyComment =
+                            currentProfile?.user.id === comment.author.id;
+                          const isEditing = editingCommentId === comment.id;
+                          const isDeletingComment =
+                            deletingCommentId === comment.id;
+                          const isSavingComment = savingCommentId === comment.id;
+
+                          return (
+                            <div key={comment.id} className="flex gap-3">
+                              {comment.author.avatarUrl ? (
+                                <img
+                                  src={comment.author.avatarUrl}
+                                  alt={comment.author.username}
+                                  className="mt-0.5 h-8 w-8 shrink-0 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
+                                  {getInitial(comment.author.username)}
+                                </div>
+                              )}
+
+                              <div className="min-w-0 flex-1">
+                                {isEditing ? (
+                                  <>
+                                    <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
+                                      <textarea
+                                        value={editingContent}
+                                        onChange={(event) =>
+                                          setEditingContent(event.target.value)
+                                        }
+                                        rows={3}
+                                        disabled={isSavingComment}
+                                        className="w-full resize-none border-0 bg-transparent text-sm text-black outline-none disabled:opacity-60"
+                                      />
+                                    </div>
+
+                                    <div className="mt-2 flex gap-3 text-xs">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          void handleSaveEditComment(comment.id);
+                                        }}
+                                        disabled={
+                                          isSavingComment ||
+                                          editingContent.trim() === ""
+                                        }
+                                        className="font-semibold text-[#0095f6] hover:text-[#1877f2] disabled:opacity-60"
+                                      >
+                                        {isSavingComment ? "Saving..." : "Save"}
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={handleCancelEditComment}
+                                        disabled={isSavingComment}
+                                        className="text-[#8e8e8e] hover:text-black disabled:opacity-60"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-sm leading-6 text-black">
+                                      <span className="mr-2 font-semibold">
+                                        {comment.author.username}
+                                      </span>
+                                      {comment.content}
+                                    </p>
+
+                                    <p className="mt-1 text-xs uppercase tracking-wide text-[#8e8e8e]">
+                                      {formatPostDate(comment.createdAt)}
+                                    </p>
+
+                                    {isMyComment ? (
+                                      <div className="mt-1 flex gap-3 text-xs text-[#8e8e8e]">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleStartEditComment(comment)
+                                          }
+                                          disabled={Boolean(
+                                            deletingCommentId || savingCommentId,
+                                          )}
+                                          className="hover:text-black disabled:opacity-60"
+                                        >
+                                          Edit
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            void handleDeleteComment(comment.id);
+                                          }}
+                                          disabled={isDeletingComment}
+                                          className="hover:text-black disabled:opacity-60"
+                                        >
+                                          {isDeletingComment ? "Deleting..." : "Delete"}
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {error ? (
@@ -470,9 +796,13 @@ export default function PostDetailsPage() {
 
                     <button
                       type="button"
+                      onClick={handleCommentIconClick}
                       className="text-left text-sm font-medium hover:opacity-70"
                     >
-                      <MessageCircle className="h-6 w-6 scale-x-[-1]" strokeWidth={1.75} />
+                      <MessageCircle
+                        className="h-6 w-6 scale-x-[-1]"
+                        strokeWidth={1.75}
+                      />
                     </button>
                   </div>
 
@@ -482,18 +812,36 @@ export default function PostDetailsPage() {
 
                   <div className="mt-4 flex items-center gap-3 border-t pt-3">
                     <input
+                      ref={commentInputRef}
                       type="text"
+                      value={commentInput}
+                      onChange={(event) => setCommentInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void handleCommentSubmit();
+                        }
+                      }}
                       placeholder="Add comment"
-                      className="h-10 flex-1 border-0 bg-transparent text-sm text-black outline-none placeholder:text-[#8e8e8e]"
+                      disabled={isSubmittingComment}
+                      className="h-10 flex-1 border-0 bg-transparent text-sm text-black outline-none placeholder:text-[#8e8e8e] disabled:opacity-60"
                     />
 
                     <button
                       type="button"
-                      className="text-sm font-semibold text-[#0095f6] hover:text-[#1877f2]"
+                      onClick={() => {
+                        void handleCommentSubmit();
+                      }}
+                      disabled={isSubmittingComment || commentInput.trim() === ""}
+                      className="text-sm font-semibold text-[#0095f6] hover:text-[#1877f2] disabled:opacity-60"
                     >
-                      Send
+                      {isSubmittingComment ? "Sending..." : "Send"}
                     </button>
                   </div>
+
+                  <p className="mt-2 text-xs text-[#8e8e8e]">
+                    {effectiveCommentsCount} comments
+                  </p>
                 </div>
               </div>
 
@@ -583,9 +931,13 @@ export default function PostDetailsPage() {
 
                     <button
                       type="button"
+                      onClick={handleCommentIconClick}
                       className="text-left text-sm font-medium hover:opacity-70"
                     >
-                      <MessageCircle className="h-6 w-6 scale-x-[-1]" strokeWidth={1.75} />
+                      <MessageCircle
+                        className="h-6 w-6 scale-x-[-1]"
+                        strokeWidth={1.75}
+                      />
                     </button>
                   </div>
 
@@ -594,7 +946,7 @@ export default function PostDetailsPage() {
                   </p>
 
                   <p className="mt-1 text-sm text-[#8e8e8e]">
-                    {post.commentsCount} comments
+                    {effectiveCommentsCount} comments
                   </p>
 
                   <p className="mt-2 text-xs uppercase tracking-wide text-[#8e8e8e]">
