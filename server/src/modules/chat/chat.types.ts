@@ -20,7 +20,10 @@ export interface MessageDto {
   senderId: string;
   text: string;
   isRead: boolean;
+  isEdited: boolean;
+  editedAt: string | null;
   isDeleted: boolean;
+  deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

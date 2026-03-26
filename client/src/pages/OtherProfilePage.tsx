@@ -16,6 +16,7 @@ import {
   fetchMyProfile,
 } from "@/store/slices/profileSlice";
 import { seedFollowRelations, setFollowRelation } from "@/store/slices/followsSlice";
+import { createDirectConversation } from "@/features/chat/api/chat";
 
 export default function OtherProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,36 @@ export default function OtherProfilePage() {
 
   const [isSubmittingFollow, setIsSubmittingFollow] = useState(false);
   const [followError, setFollowError] = useState("");
+
+  const [isSubmittingMessage, setIsSubmittingMessage] = useState(false);
+const [messageError, setMessageError] = useState("");
+
+async function handleOpenMessages() {
+  if (!id || isSubmittingMessage) {
+    return;
+  }
+
+  setMessageError("");
+  setIsSubmittingMessage(true);
+
+  const result = await createDirectConversation({
+    participantId: id,
+  });
+
+  if (!result.ok) {
+    setMessageError(result.error);
+    setIsSubmittingMessage(false);
+    return;
+  }
+
+  navigate("/messages", {
+    state: {
+      conversationId: result.data.id,
+    },
+  });
+
+  setIsSubmittingMessage(false);
+}
 
   useEffect(() => {
     if (!id) {
@@ -132,8 +163,8 @@ export default function OtherProfilePage() {
               disabled={isSubmittingFollow}
               className={
                 isFollowing
-                  ? "h-8 w-fit rounded-[8px] bg-[rgba(239,239,239,1)] px-6 text-sm font-semibold text-black hover:bg-[rgba(239,239,239,1)] disabled:opacity-70"
-                  : "h-8 w-fit rounded-[8px] bg-[#0095F6] px-6 text-sm font-semibold text-white hover:bg-[#0095F6]/90 disabled:opacity-70"
+                  ? "h-8 w-fit rounded-[8px] bg-[rgba(239,239,239,1)] px-10 text-sm font-semibold text-black hover:bg-[rgba(239,239,239,1)] disabled:opacity-70"
+                  : "h-8 w-fit rounded-[8px] bg-[#0095F6] px-10 text-sm font-semibold text-white hover:bg-[#0095F6]/90 disabled:opacity-70"
               }
             >
               {isSubmittingFollow
@@ -145,15 +176,16 @@ export default function OtherProfilePage() {
                   : "Follow"}
             </Button>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled
-              className="h-8 w-fit rounded-[8px] px-6 text-sm font-semibold"
-            >
-              Message
-            </Button>
+           <Button
+  type="button"
+  size="sm"
+  variant="secondary"
+  onClick={handleOpenMessages}
+  disabled={isSubmittingMessage}
+  className="h-8  rounded-[8px] bg-[#EFEFEF] px-14 text-sm font-semibold text-black hover:bg-[#EFEFEF] disabled:opacity-70"
+>
+  {isSubmittingMessage ? "Opening..." : "Message"}
+</Button>
           </>
         }
       />
@@ -162,6 +194,9 @@ export default function OtherProfilePage() {
         <p className="mt-4 text-sm text-red-500">{followError}</p>
       ) : null}
 
+{messageError ? (
+  <p className="mt-2 text-sm text-red-500">{messageError}</p>
+) : null}
       <div className="mt-8 border-t pt-6">
         <ProfilePostsGrid
           posts={posts}

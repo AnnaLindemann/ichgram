@@ -11,6 +11,8 @@ export interface Message {
   senderId: Types.ObjectId;
   text: string;
   isRead: boolean;
+  isEdited: boolean;
+  editedAt: Date | null;
   isDeleted: boolean;
   deletedAt: Date | null;
   createdAt: Date;
@@ -47,10 +49,18 @@ const messageSchema = new Schema<Message, MessageModelType>(
       default: false,
       index: true,
     },
+    isEdited:{
+      type: Boolean,
+      default: false,   
+    },
+    editedAt: {
+      type: Date,
+      default: null,
+    }, 
     isDeleted: {
       type: Boolean,
       default: false,
-    },
+    },       
     deletedAt: {
       type: Date,
       default: null,

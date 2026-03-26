@@ -6,6 +6,7 @@ import {
   listMessagesQuerySchema,
   objectIdParamSchema,
   sendMessageSchema,
+  editMessageSchema,
 } from "./chat.schemas.js";
 import {
   createOrGetDirectConversation,
@@ -14,6 +15,7 @@ import {
   listMyConversations,
   markConversationMessagesAsRead,
   sendMessageToConversation,
+  editOwnMessage,
 } from "./chat.service.js";
 
 type AuthenticatedRequest = Request & {
@@ -89,6 +91,22 @@ export async function sendMessageToConversationController(
   const message = await sendMessageToConversation(conversationId, currentUserId, text);
 
   res.status(201).json({
+    ok: true,
+    data: message,
+  });
+}
+
+export async function updateMessageController(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
+  const currentUserId = getAuthenticatedUserId(req);
+  const { id: messageId } = objectIdParamSchema.parse(req.params);
+  const { text } = editMessageSchema.parse(req.body);
+
+  const message = await editOwnMessage(messageId, currentUserId, text);
+
+  res.status(200).json({
     ok: true,
     data: message,
   });

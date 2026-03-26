@@ -8,6 +8,7 @@ import {
   listMyConversationsController,
   markConversationMessagesAsReadController,
   sendMessageToConversationController,
+  updateMessageController,
 } from "./chat.controller.js";
 
 export const chatRouter = Router();
@@ -22,4 +23,5 @@ chatRouter.patch(
   "/conversations/:id/read",
   asyncHandler(markConversationMessagesAsReadController),
 );
+chatRouter.patch("/messages/:id", asyncHandler(updateMessageController));
 chatRouter.delete("/messages/:id", asyncHandler(deleteOwnMessageController));

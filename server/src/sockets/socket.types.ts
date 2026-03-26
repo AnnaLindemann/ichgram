@@ -1,5 +1,6 @@
 import type { Socket } from "socket.io";
 import type { PublicNotification } from "../modules/notifications/notifications.types.js";
+import type { NewMessageRealtimePayload, MessageUpdatedRealtimePayload  } from "./realtime.gateway.js";
 
 export interface AuthenticatedSocketData {
   userId: string;
@@ -7,20 +8,11 @@ export interface AuthenticatedSocketData {
 
 export interface ServerToClientEvents {
   "socket:ready": (payload: { userId: string; socketId: string }) => void;
-  "message:new": (payload: {
-    conversationId: string;
-    message: {
-      id: string;
-      conversationId: string;
-      senderId: string;
-      text: string;
-      createdAt: string;
-      isRead: boolean;
-    };
-  }) => void;
+  "message:new": (payload: NewMessageRealtimePayload) => void;
   "notification:new": (payload: {
     notification: PublicNotification;
   }) => void;
+  "message:updated": (payload: MessageUpdatedRealtimePayload) => void;
   "message:deleted": (payload: {
     conversationId: string;
     messageId: string;

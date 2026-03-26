@@ -2,7 +2,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import profileReducer from "./slices/profileSlice";
 import followsReducer from "./slices/followsSlice";
 import postLikesReducer from "./slices/postLikesSlice";
-import postCommentsReducer from "./slices/postCommentsSlice"
+import postCommentsReducer from "./slices/postCommentsSlice";
+import chatReducer from "./slices/chatSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     follows: followsReducer,
     postLikes: postLikesReducer,
     postComments: postCommentsReducer,
+    chat: chatReducer,
   },
 });
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import type { PublicUser, ProfileStats } from "../types/profile.types";
 
@@ -32,6 +32,9 @@ export function ProfileHeader({
   actions,
 }: ProfileHeaderProps) {
   const avatarSrc = resolveAvatarSrc(user.avatarUrl);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
+
+  const shouldShowBioToggle = (user.bio?.length ?? 0) > 110;
 
   return (
     <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
@@ -65,13 +68,30 @@ export function ProfileHeader({
             </p>
           </div>
 
-          <div className="space-y-1">
-            <p className="font-semibold">{user.fullName}</p>
+          <div className="space-y-1">        
 
             {user.bio ? (
-              <p className="whitespace-pre-line text-sm text-foreground">
-                {user.bio}
-              </p>
+              <div>
+                <p
+                  className={`whitespace-pre-line text-sm text-foreground ${
+                    !isBioExpanded && shouldShowBioToggle
+                      ? "[display:-webkit-box] overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:3]"
+                      : ""
+                  }`}
+                >
+                  {user.bio}
+                </p>
+
+                {shouldShowBioToggle ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsBioExpanded((prev) => !prev)}
+                    className="mt-1 text-sm text-[#8E8E8E] hover:underline"
+                  >
+                    {isBioExpanded ? "less" : "more"}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
 
             {user.website ? (

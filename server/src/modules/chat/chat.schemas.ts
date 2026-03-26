@@ -26,8 +26,17 @@ export const listMessagesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const editMessageSchema = z.object({
+    text: z
+    .string()
+    .trim()
+    .min(1, "text is required")
+    .max(1000, "text must be less than or equal to 1000 characters"),
+});
+
 export type ObjectIdParamInput = z.infer<typeof objectIdParamSchema>;
 export type CreateDirectConversationInput = z.infer<typeof createDirectConversationSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
 export type ListConversationsQueryInput = z.infer<typeof listConversationsQuerySchema>;
 export type ListMessagesQueryInput = z.infer<typeof listMessagesQuerySchema>;
+export type EditMessageInput = z.infer<typeof editMessageSchema>;

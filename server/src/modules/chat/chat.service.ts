@@ -8,6 +8,7 @@ import {
   emitNewMessage,
   emitMessageDeleted,
   emitMessagesRead,
+  emitMessageUpdated,
 } from "../../sockets/realtime.gateway.js";
 import {
   buildDirectConversationPairKey,
@@ -254,6 +255,8 @@ export async function sendMessageToConversation(
     senderId: currentUserObjectId,
     text: trimmedText,
     isRead: false,
+    isEdited: false,
+    editedAt: null,
     isDeleted: false,
     deletedAt: null,
   });
@@ -294,6 +297,79 @@ export async function sendMessageToConversation(
   } catch (error: unknown) {
     console.error("Failed to create message notification", error);
   }
+
+  return messageDto;
+}
+
+export async function editOwnMessage(
+  messageId: string,
+  currentUserId: string,
+  text: string,
+): Promise<MessageDto> {
+  const messageObjectId = await ensureValidObjectId(messageId, "messageId");
+  const currentUserObjectId = await ensureValidObjectId(
+    currentUserId,
+    "currentUserId",
+  );
+
+  const message = await MessageModel.findById(messageObjectId).exec();
+
+  if (!message) {
+    throw new HttpError(404, "Message not found");
+  }
+
+  if (message.senderId.toString() !== currentUserObjectId.toString()) {
+    throw new HttpError(403, "You can edit only your own messages");
+  }
+
+  if (message.isDeleted) {
+    throw new HttpError(400, "Deleted message cannot be edited");
+  }
+
+  const trimmedText = text.trim();
+
+  if (!trimmedText) {
+    throw new HttpError(400, "text is required");
+  }
+
+  if (message.text === trimmedText) {
+    return toMessageDto(message);
+  }
+
+  message.text = trimmedText;
+  message.isEdited = true;
+  message.editedAt = new Date();
+
+  await message.save();
+
+  const latestMessage = await MessageModel.findOne({
+    conversationId: message.conversationId,
+  })
+    .sort({ createdAt: -1 })
+    .select("_id")
+    .lean()
+    .exec();
+
+  if (
+    latestMessage &&
+    latestMessage._id.toString() === message._id.toString()
+  ) {
+    await ConversationModel.updateOne(
+      { _id: message.conversationId },
+      {
+        $set: {
+          lastMessageText: trimmedText,
+        },
+      },
+    ).exec();
+  }
+
+  const messageDto = toMessageDto(message);
+
+  emitMessageUpdated(message.conversationId.toString(), {
+    conversationId: message.conversationId.toString(),
+    message: messageDto,
+  });
 
   return messageDto;
 }

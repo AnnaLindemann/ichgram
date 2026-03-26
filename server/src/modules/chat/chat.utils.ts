@@ -55,7 +55,10 @@ export function toMessageDto(message: MessageDocument): MessageDto {
     senderId: message.senderId.toString(),
     text: message.text,
     isRead: message.isRead,
+    isEdited: message.isEdited,
+    editedAt: message.editedAt ? message.editedAt.toISOString() : null,
     isDeleted: message.isDeleted,
+    deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null,
     createdAt: message.createdAt.toISOString(),
     updatedAt: message.updatedAt.toISOString(),
   };

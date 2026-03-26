@@ -1,16 +1,14 @@
 import type { PublicNotification } from "../modules/notifications/notifications.types.js";
 import { getIo, getConversationRoom, getUserRoom } from "./socket.server.js";
-
+import type { MessageDto } from "../modules/chat/chat.types.js";
 export interface NewMessageRealtimePayload {
   conversationId: string;
-  message: {
-    id: string;
+  message: MessageDto
+}
+
+export interface MessageUpdatedRealtimePayload {
     conversationId: string;
-    senderId: string;
-    text: string;
-    createdAt: string;
-    isRead: boolean;
-  };
+    message: MessageDto
 }
 
 export interface NewNotificationRealtimePayload {
@@ -51,4 +49,13 @@ export function emitMessagesRead(
   const io = getIo();
 
   io.to(getConversationRoom(conversationId)).emit("message:read", payload);
+}
+
+export function emitMessageUpdated(
+conversationId: string,
+payload: MessageUpdatedRealtimePayload,
+) : void {
+  const io = getIo();
+
+  io.to(getConversationRoom(conversationId)).emit("message:updated", payload);
 }

@@ -111,7 +111,10 @@ export default function AppLayout() {
       </div>
 
       <div className="hidden md:block">
-        <Footer />
+        <Footer 
+         onSearchClick={openSearch}
+    onNotificationsClick={openNotifications}
+    onCreateClick={openCreatePost}/>
       </div>
 
       <SearchPanel isOpen={isSearchOpen} onClose={closeOverlays} />
