@@ -4,24 +4,34 @@ export const registerSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "Email is required")
-    .email("Email is invalid")
+    .min(1, "Please enter your email")
+    .max(100, "Email must contain at most 100 characters")
+    .email("Enter a valid email address, for example: example@example.com")
     .transform((value) => value.toLowerCase()),
 
   fullName: z
     .string()
     .trim()
-    .min(1, "Full name is required"),
+    .min(1, "Please enter your full name")
+    .max(100, "Full name must contain at most 100 characters"),
 
   username: z
     .string()
     .trim()
-    .min(1, "Username is required")
+    .min(3, "Username must contain at least 3 characters")
+    .max(30, "Username must contain at most 30 characters")
+    .regex(
+      /^[a-zA-Z0-9_.]+$/,
+      "Username can contain only letters, numbers, dots, and underscores"
+    )
     .transform((value) => value.toLowerCase()),
 
   password: z
-    .string()
-    .min(6, "Password must be at least 6 characters long"),
+   .string()
+  .min(8, "Password must contain at least 8 characters")
+  .max(72, "Password must contain at most 72 characters")
+  .regex(/[A-Za-z]/, "Password must contain at least one letter")
+  .regex(/[0-9]/, "Password must contain at least one number"),
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

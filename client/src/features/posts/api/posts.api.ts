@@ -1,6 +1,4 @@
-import axios from "axios";
-
-import { getAuthToken } from "@/lib/auth-storage";
+import { http } from "@/shared/api/http";
 import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 
 export type PostAuthorDto = {
@@ -91,15 +89,6 @@ export async function createPost(
   file: File,
   caption: string,
 ): Promise<CreatePostResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   const formData = new FormData();
   formData.append("image", file);
 
@@ -108,15 +97,7 @@ export async function createPost(
   }
 
   try {
-    const res = await axios.post<CreatePostResponse>(
-      `${import.meta.env.VITE_API_URL}/api/posts`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
+    const res = await http.post<CreatePostResponse>("/api/posts", formData);
 
     if (!res.data.ok) {
       return res.data;
@@ -138,15 +119,6 @@ export async function updatePost(
   postId: string,
   input: UpdatePostInput,
 ): Promise<UpdatePostResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   const formData = new FormData();
 
   if (input.caption !== undefined) {
@@ -158,14 +130,9 @@ export async function updatePost(
   }
 
   try {
-    const res = await axios.patch<UpdatePostResponse>(
-      `${import.meta.env.VITE_API_URL}/api/posts/${postId}`,
+    const res = await http.patch<UpdatePostResponse>(
+      `/api/posts/${postId}`,
       formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
     );
 
     if (!res.data.ok) {
@@ -185,25 +152,8 @@ export async function updatePost(
 }
 
 export async function deletePost(postId: string): Promise<DeletePostResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
-    const res = await axios.delete<DeletePostResponse>(
-      `${import.meta.env.VITE_API_URL}/api/posts/${postId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
+    const res = await http.delete<DeletePostResponse>(`/api/posts/${postId}`);
     return res.data;
   } catch (error: unknown) {
     return {

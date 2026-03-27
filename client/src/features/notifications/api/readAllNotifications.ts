@@ -1,6 +1,4 @@
-import { getAuthToken } from "@/lib/auth-storage";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
+import { http } from "@/shared/api/http";
 
 type ReadAllNotificationsResponse = {
   updatedCount: number;
@@ -45,25 +43,7 @@ function normalizeReadAllNotificationsResponse(
 }
 
 export async function readAllNotifications(): Promise<ReadAllNotificationsResponse> {
-  const token = getAuthToken();
+  const res = await http.patch<unknown>("/api/notifications/read-all");
 
-  if (!token) {
-    throw new Error("Access token is missing");
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to mark all notifications as read");
-  }
-
-  const rawData: unknown = await response.json();
-
-  return normalizeReadAllNotificationsResponse(rawData);
+  return normalizeReadAllNotificationsResponse(res.data);
 }

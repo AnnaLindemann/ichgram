@@ -6,6 +6,8 @@ import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
 import { ProfilePostsGrid } from "@/features/profile/components/ProfilePostsGrid";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
+import { ProfilePostsGridSkeleton } from "@/features/profile/components/ProfilePostsGridSkeleton";
+import { ProfileHeaderSkeleton } from "@/features/profile/components/ProfileHeaderSkeleton";
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -25,8 +27,13 @@ export default function ProfilePage() {
 }, [dispatch, location.key, location.pathname]);
 
  if (loading && !currentProfile) {
-    return <div className="p-4">Loading profile...</div>;
-  }
+  return (
+    <div className="w-full max-w-[935px] mx-auto">
+      <ProfileHeaderSkeleton />
+      <ProfilePostsGridSkeleton />
+    </div>
+  );
+}
 
   if (error) {
     return <div className="p-4 text-red-500">{error}</div>;

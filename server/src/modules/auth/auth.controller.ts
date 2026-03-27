@@ -13,6 +13,10 @@ import { forgotPasswordService } from "./auth.service.js";
 import { resetPasswordSchema } from "./auth.schemas.js";
 import { resetPasswordService } from "./auth.service.js";
 
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, fullName, password } = registerSchema.parse(req.body);
 
@@ -64,7 +68,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 export async function login(req: Request, res: Response): Promise<void> {
   const { identifier, password } = loginSchema.parse(req.body);
 
-  const isEmail = identifier.includes("@");
+  const isEmail = looksLikeEmail(identifier);
 
   const existingUser = await UserModel.findOne(
     isEmail ? { email: identifier } : { username: identifier }

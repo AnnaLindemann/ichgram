@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { Heart, MessageCircle } from "lucide-react";
 
 import { fetchMyProfile } from "@/store/slices/profileSlice";
@@ -33,6 +33,7 @@ import {
   incrementPostCommentsCount,
   seedPostComments,
 } from "@/store/slices/postCommentsSlice";
+
 
 function formatPostDate(value: string) {
   const date = new Date(value);
@@ -534,6 +535,13 @@ export default function PostDetailsPage() {
     ? (commentsCountByPostId[post.id] ?? post.commentsCount)
     : 0;
 
+      const authorProfilePath =
+    post && currentProfile?.user.id === post.author.id
+      ? "/profile"
+      : post
+        ? `/profile/${post.author.id}`
+        : "/profile";
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/65 px-6 py-8 md:px-10 md:py-10"
@@ -582,9 +590,12 @@ export default function PostDetailsPage() {
                     )}
 
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="text-sm font-semibold text-black">
-                        {post.author.username}
-                      </span>
+                     <Link
+  to={authorProfilePath}
+  className="text-sm font-semibold text-black"
+>
+  {post.author.username}
+</Link>
 
                       {showFollowSection ? (
                         <>
@@ -641,9 +652,12 @@ export default function PostDetailsPage() {
 
                     <div className="min-w-0">
                       <p className="text-sm leading-6 text-black">
-                        <span className="mr-2 font-semibold">
-                          {post.author.username}
-                        </span>
+                       <Link
+  to={authorProfilePath}
+  className="mr-2 font-semibold"
+>
+  {post.author.username}
+</Link>
                         {post.caption || " "}
                       </p>
 
@@ -861,9 +875,12 @@ export default function PostDetailsPage() {
                     )}
 
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="text-sm font-semibold text-black">
-                        {post.author.username}
-                      </span>
+                <Link
+  to={authorProfilePath}
+  className="text-sm font-semibold text-black"
+>
+  {post.author.username}
+</Link>
 
                       {showFollowSection ? (
                         <>
@@ -954,9 +971,12 @@ export default function PostDetailsPage() {
                   </p>
 
                   <p className="mt-3 text-sm leading-6 text-black">
-                    <span className="mr-2 font-semibold">
-                      {post.author.username}
-                    </span>
+                    <Link
+  to={authorProfilePath}
+  className="mr-2 font-semibold"
+>
+  {post.author.username}
+</Link>
                     {post.caption || " "}
                   </p>
 

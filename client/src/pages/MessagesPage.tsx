@@ -21,8 +21,6 @@ import {
 } from "@/features/chat/api/chat";
 import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import {
-  connectChatSocket,
-  disconnectChatSocket,
   joinConversationRoom,
   leaveConversationRoom,
   onMessageDeleted,
@@ -249,6 +247,7 @@ export default function MessagesPage() {
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const markingReadConversationIdRef = useRef<string | null>(null);
+  const activeConversationIdRef = useRef<string | null>(null);
 
   const {
     conversations,
@@ -435,7 +434,11 @@ export default function MessagesPage() {
     };
   }, [activeConversationId, dispatch]);
 
-    useEffect(() => {
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  useEffect(() => {
     if (!activeConversationId || !currentUserId) {
       return;
     }
@@ -469,24 +472,14 @@ export default function MessagesPage() {
         return;
       }
 
-      dispatch(
-        markConversationMessagesAsRead({
-          conversationId,
-          readerId,
-          currentUserId: readerId,
-        }),
-      );
-
       markingReadConversationIdRef.current = null;
     }
 
     void syncReadState();
-  }, [activeConversationId, activeMessages, currentUserId, dispatch]);
+  }, [activeConversationId, activeMessages, currentUserId]);
 
   useEffect(() => {
-    const socket = connectChatSocket();
-
-    if (!socket || !currentUserId) {
+    if (!currentUserId) {
       return;
     }
 
@@ -503,7 +496,7 @@ export default function MessagesPage() {
       );
 
       const isActiveConversation =
-        payload.conversationId === activeConversationId;
+        payload.conversationId === activeConversationIdRef.current;
       const isOwnMessage = payload.message.senderId === currentUserId;
 
       if (isActiveConversation && (shouldAutoScrollRef.current || isOwnMessage)) {
@@ -545,10 +538,8 @@ export default function MessagesPage() {
       offUpdatedMessage();
       offDeletedMessage();
       offReadMessage();
-      dispatch(setSocketReady(false));
-      disconnectChatSocket();
     };
-  }, [activeConversationId, currentUserId, dispatch]);
+  }, [currentUserId, dispatch]);
 
   useEffect(() => {
     if (!activeConversationId) {
@@ -589,13 +580,6 @@ export default function MessagesPage() {
         dispatch(setSendingMessage(false));
         return;
       }
-
-      dispatch(
-        upsertMessageForConversation({
-          conversationId,
-          message: result.data,
-        }),
-      );
 
       resetComposer();
       dispatch(setSendingMessage(false));
@@ -638,13 +622,6 @@ export default function MessagesPage() {
       dispatch(setSendMessageError(result.error));
       return;
     }
-
-    dispatch(
-      markMessageAsDeleted({
-        conversationId: activeConversationId,
-        messageId: message.id,
-      }),
-    );
 
     if (editingMessageId === message.id) {
       resetComposer();

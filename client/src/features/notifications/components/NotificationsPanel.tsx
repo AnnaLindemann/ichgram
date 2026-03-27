@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { getNotifications } from "../api/getNotifications";
 import { readNotification } from "../api/readNotification";
 import { readAllNotifications } from "../api/readAllNotifications";
 import type { NotificationItem } from "../types/notification.types";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 
 type NotificationsPanelProps = {
   isOpen: boolean;
   onClose: () => void;
   onNotificationRead: () => void;
   onAllNotificationsRead: () => void;
+  latestNotification: NotificationItem | null;
 };
 
 type NotificationsState =
@@ -17,8 +21,6 @@ type NotificationsState =
   | { status: "empty" }
   | { status: "ready"; items: NotificationItem[] }
   | { status: "error"; message: string };
-
-const NOTIFICATIONS_PANEL_POLLING_MS = 5000;
 
 function getNotificationContent(notification: NotificationItem): string {
   switch (notification.type) {
@@ -35,9 +37,44 @@ function getNotificationContent(notification: NotificationItem): string {
   }
 }
 
+function getNotificationTarget(notification: NotificationItem): {
+  pathname: string;
+  state?: { conversationId?: string };
+} | null {
+  switch (notification.type) {
+    case "message":
+      return notification.conversationId
+        ? {
+            pathname: "/messages",
+            state: { conversationId: notification.conversationId },
+          }
+        : {
+            pathname: "/messages",
+          };
+
+    case "like":
+    case "comment":
+      return notification.postId
+        ? {
+            pathname: `/posts/${notification.postId}`,
+          }
+        : null;
+
+    case "follow":
+      return notification.actor.id
+        ? {
+            pathname: `/profile/${notification.actor.id}`,
+          }
+        : null;
+
+    default:
+      return null;
+  }
+}
+
 type NotificationRowProps = {
   notification: NotificationItem;
-  onRead: (notificationId: string) => void;
+  onRead: (notification: NotificationItem) => void;
 };
 
 function NotificationRow({ notification, onRead }: NotificationRowProps) {
@@ -61,7 +98,7 @@ function NotificationRow({ notification, onRead }: NotificationRowProps) {
 
       <button
         type="button"
-        onClick={() => onRead(notification.id)}
+        onClick={() => onRead(notification)}
         className="min-w-0 flex-1 text-left"
       >
         <p className="text-[16px] leading-5 text-black">
@@ -84,7 +121,7 @@ function NotificationRow({ notification, onRead }: NotificationRowProps) {
       {notification.postPreviewImageUrl ? (
         <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[8px] bg-[#d9d9d9]">
           <img
-            src={notification.postPreviewImageUrl}
+            src={resolveMediaUrl(notification.postPreviewImageUrl)}
             alt="Post preview"
             className="h-full w-full object-cover"
           />
@@ -99,9 +136,11 @@ export function NotificationsPanel({
   onClose,
   onNotificationRead,
   onAllNotificationsRead,
+  latestNotification,
 }: NotificationsPanelProps) {
   const [state, setState] = useState<NotificationsState>({ status: "loading" });
   const [isReadingAll, setIsReadingAll] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isOpen) {
@@ -110,10 +149,8 @@ export function NotificationsPanel({
 
     let isActive = true;
 
-    async function loadNotifications(showLoading = false) {
-      if (showLoading) {
-        setState({ status: "loading" });
-      }
+    async function loadNotifications() {
+      setState({ status: "loading" });
 
       try {
         const result = await getNotifications();
@@ -138,66 +175,84 @@ export function NotificationsPanel({
             ? error.message
             : "Failed to load notifications";
 
-        setState((currentState) => {
-          if (!showLoading && currentState.status === "ready") {
-            return currentState;
-          }
-
-          return { status: "error", message };
-        });
+        setState({ status: "error", message });
       }
     }
 
-    void loadNotifications(true);
-
-    const intervalId = window.setInterval(() => {
-      void loadNotifications(false);
-    }, NOTIFICATIONS_PANEL_POLLING_MS);
+    void loadNotifications();
 
     return () => {
       isActive = false;
-      window.clearInterval(intervalId);
     };
   }, [isOpen]);
 
-  async function handleRead(notificationId: string) {
+  useEffect(() => {
+    if (!isOpen || !latestNotification) {
+      return;
+    }
+
+    setState((currentState) => {
+      if (currentState.status !== "ready") {
+        return currentState;
+      }
+
+      const alreadyExists = currentState.items.some(
+        (item) => item.id === latestNotification.id,
+      );
+
+      if (alreadyExists) {
+        return currentState;
+      }
+
+      return {
+        status: "ready",
+        items: [latestNotification, ...currentState.items],
+      };
+    });
+  }, [isOpen, latestNotification]);
+
+  async function handleRead(notification: NotificationItem) {
     if (state.status !== "ready") {
       return;
     }
 
-    const target = state.items.find((item) => item.id === notificationId);
+    const target = getNotificationTarget(notification);
 
-    if (!target || target.isRead) {
+    if (!notification.isRead) {
+      try {
+        const updatedNotification = await readNotification(notification.id);
+
+        setState((currentState) => {
+          if (currentState.status !== "ready") {
+            return currentState;
+          }
+
+          return {
+            status: "ready",
+            items: currentState.items.map((item) =>
+              item.id === notification.id ? updatedNotification : item,
+            ),
+          };
+        });
+
+        onNotificationRead();
+      } catch (error) {
+        console.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to mark notification as read",
+        );
+        return;
+      }
+    }
+
+    onClose();
+
+    if (!target) {
       return;
     }
 
-    try {
-      const updatedNotification = await readNotification(notificationId);
-
-      setState((currentState) => {
-        if (currentState.status !== "ready") {
-          return currentState;
-        }
-
-        const updatedItems = currentState.items.map((item) =>
-          item.id === notificationId ? updatedNotification : item
-        );
-
-        return {
-          status: "ready",
-          items: updatedItems,
-        };
-      });
-
-      onNotificationRead();
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to mark notification as read";
-
-      console.error(message);
-    }
+    navigate(target.pathname, target.state ? { state: target.state } : undefined);
   }
 
   async function handleReadAll() {
@@ -232,12 +287,9 @@ export function NotificationsPanel({
 
       onAllNotificationsRead();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to mark all notifications as read";
-
-      console.error(message);
+      console.error(
+        error instanceof Error ? error.message : "Failed to mark all notifications as read",
+      );
     } finally {
       setIsReadingAll(false);
     }

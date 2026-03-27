@@ -8,6 +8,11 @@ import type {
   MessageUpdatedSocketPayload,
   SocketReadyPayload,
 } from "@/features/chat/types/chat.types";
+import type { NotificationItem } from "@/features/notifications/types/notification.types";
+
+type NotificationNewPayload = {
+  notification: NotificationItem;
+};
 
 type ServerToClientEvents = {
   "socket:ready": (payload: SocketReadyPayload) => void;
@@ -15,6 +20,7 @@ type ServerToClientEvents = {
   "message:updated": (payload: MessageUpdatedSocketPayload) => void;
   "message:deleted": (payload: MessageDeletedSocketPayload) => void;
   "message:read": (payload: MessageReadSocketPayload) => void;
+  "notification:new": (payload: NotificationNewPayload) => void;
 };
 
 type ClientToServerEvents = {
@@ -147,5 +153,19 @@ export function onMessageRead(
 
   return () => {
     socketInstance?.off("message:read", handler);
+  };
+}
+
+export function onNewNotification(
+  handler: (payload: NotificationNewPayload) => void,
+): () => void {
+  if (!socketInstance) {
+    return () => undefined;
+  }
+
+  socketInstance.on("notification:new", handler);
+
+  return () => {
+    socketInstance?.off("notification:new", handler);
   };
 }

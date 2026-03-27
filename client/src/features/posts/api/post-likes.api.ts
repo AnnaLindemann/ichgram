@@ -1,5 +1,4 @@
 import { http } from "@/shared/api/http";
-import { getAuthToken } from "@/lib/auth-storage";
 
 type PostLikeSuccessResponse = {
   ok: true;
@@ -27,18 +26,6 @@ export type PostLikeResult =
       error: string;
     };
 
-function getAuthHeaders(): Record<string, string> | null {
-  const token = getAuthToken();
-
-  if (!token) {
-    return null;
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 function getApiErrorMessage(error: unknown, fallback: string): string {
   return typeof error === "object" &&
     error !== null &&
@@ -55,20 +42,10 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export async function likePostById(postId: string): Promise<PostLikeResult> {
-  const headers = getAuthHeaders();
-
-  if (!headers) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
     const res = await http.post<PostLikeApiResponse>(
       `/api/posts/${postId}/like`,
       {},
-      { headers },
     );
 
     if (!res.data.ok) {
@@ -92,19 +69,8 @@ export async function likePostById(postId: string): Promise<PostLikeResult> {
 }
 
 export async function unlikePostById(postId: string): Promise<PostLikeResult> {
-  const headers = getAuthHeaders();
-
-  if (!headers) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
-    const res = await http.delete<PostLikeApiResponse>(`/api/posts/${postId}/like`, {
-      headers,
-    });
+    const res = await http.delete<PostLikeApiResponse>(`/api/posts/${postId}/like`);
 
     if (!res.data.ok) {
       return {

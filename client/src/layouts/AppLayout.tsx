@@ -11,18 +11,24 @@ import { Footer } from "./footer";
 import { CreatePostDialog } from "@/features/posts/components/CreatePostDialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
+import {
+  connectChatSocket,
+  disconnectChatSocket,
+  onNewNotification,
+} from "@/shared/socket/chatSocket";
+import type { NotificationItem } from "@/features/notifications/types/notification.types";
 
 type ActiveOverlay = "search" | "notifications" | null;
 
-const UNREAD_NOTIFICATIONS_POLLING_MS = 10000;
-
 export default function AppLayout() {
   const location = useLocation();
-   const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch();
 
   const currentProfile = useAppSelector((state) => state.profile.currentProfile);
   const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay>(null);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [latestNotification, setLatestNotification] =
+    useState<NotificationItem | null>(null);
 
   const isSearchOpen = activeOverlay === "search";
   const isNotificationsOpen = activeOverlay === "notifications";
@@ -32,10 +38,10 @@ export default function AppLayout() {
   const closeOverlays = () => setActiveOverlay(null);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
- const openCreatePost = () => {
-  closeOverlays();
-  setIsCreatePostOpen(true);
-};
+  const openCreatePost = () => {
+    closeOverlays();
+    setIsCreatePostOpen(true);
+  };
 
   useEffect(() => {
     if (!currentProfile) {
@@ -44,14 +50,14 @@ export default function AppLayout() {
   }, [currentProfile, dispatch]);
 
   useEffect(() => {
-  closeOverlays();
-  setIsCreatePostOpen(false);
-}, [location.pathname]);
+    closeOverlays();
+    setIsCreatePostOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     let isActive = true;
 
-    async function refreshUnreadNotificationsCount() {
+    async function fetchInitialUnreadCount() {
       try {
         const count = await getUnreadNotificationsCount();
 
@@ -67,22 +73,63 @@ export default function AppLayout() {
       }
     }
 
-    void refreshUnreadNotificationsCount();
-
-    const intervalId = window.setInterval(() => {
-      void refreshUnreadNotificationsCount();
-    }, UNREAD_NOTIFICATIONS_POLLING_MS);
+    void fetchInitialUnreadCount();
 
     return () => {
       isActive = false;
-      window.clearInterval(intervalId);
     };
   }, []);
 
+  useEffect(() => {
+    const socket = connectChatSocket();
+
+    if (!socket) {
+      return;
+    }
+
+    const offNewNotification = onNewNotification((payload) => {
+      setUnreadNotificationsCount((current) => current + 1);
+      setLatestNotification(payload.notification);
+    });
+
+    return () => {
+      offNewNotification();
+      disconnectChatSocket();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isNotificationsOpen) {
+      return;
+    }
+
+    let isActive = true;
+
+    async function syncUnreadCount() {
+      try {
+        const count = await getUnreadNotificationsCount();
+
+        if (!isActive) {
+          return;
+        }
+
+        setUnreadNotificationsCount(count);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+      }
+    }
+
+    void syncUnreadCount();
+
+    return () => {
+      isActive = false;
+    };
+  }, [isNotificationsOpen]);
+
   function handleNotificationRead() {
-    setUnreadNotificationsCount((currentCount) =>
-      currentCount > 0 ? currentCount - 1 : 0
-    );
+    setUnreadNotificationsCount((current) => (current > 0 ? current - 1 : 0));
   }
 
   function handleAllNotificationsRead() {
@@ -111,10 +158,11 @@ export default function AppLayout() {
       </div>
 
       <div className="hidden md:block">
-        <Footer 
-         onSearchClick={openSearch}
-    onNotificationsClick={openNotifications}
-    onCreateClick={openCreatePost}/>
+        <Footer
+          onSearchClick={openSearch}
+          onNotificationsClick={openNotifications}
+          onCreateClick={openCreatePost}
+        />
       </div>
 
       <SearchPanel isOpen={isSearchOpen} onClose={closeOverlays} />
@@ -124,6 +172,7 @@ export default function AppLayout() {
         onClose={closeOverlays}
         onNotificationRead={handleNotificationRead}
         onAllNotificationsRead={handleAllNotificationsRead}
+        latestNotification={latestNotification}
       />
 
       <MobileBottomNav
@@ -135,9 +184,9 @@ export default function AppLayout() {
       />
 
       <CreatePostDialog
-  open={isCreatePostOpen}
-  onOpenChange={setIsCreatePostOpen}
-/>
+        open={isCreatePostOpen}
+        onOpenChange={setIsCreatePostOpen}
+      />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import { getAuthToken } from "@/lib/auth-storage";
 import { http } from "@/shared/api/http";
 import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type {
@@ -119,25 +118,11 @@ export async function createComment(
   postId: string,
   input: CreateCommentInput,
 ): Promise<CreateCommentResult> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
     const res = await http.post<CreateCommentApiResponse>(
       `/api/posts/${postId}/comments`,
       {
         content: input.content.trim(),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       },
     );
 
@@ -160,29 +145,15 @@ export async function createComment(
   }
 }
 
-    export async function updateCommentById(
+export async function updateCommentById(
   commentId: string,
   input: CreateCommentInput,
 ): Promise<UpdateCommentResult> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
     const res = await http.patch<CreateCommentApiResponse>(
       `/api/posts/comments/${commentId}`,
       {
         content: input.content.trim(),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       },
     );
 
@@ -208,23 +179,9 @@ export async function createComment(
 export async function deleteCommentById(
   commentId: string,
 ): Promise<DeleteCommentResult> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
     const res = await http.delete<DeleteCommentApiResponse>(
       `/api/posts/comments/${commentId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
     );
 
     if (!res.data.ok) {

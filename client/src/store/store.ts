@@ -4,6 +4,7 @@ import followsReducer from "./slices/followsSlice";
 import postLikesReducer from "./slices/postLikesSlice";
 import postCommentsReducer from "./slices/postCommentsSlice";
 import chatReducer from "./slices/chatSlice";
+import feedReducer from "./slices/feedSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     postLikes: postLikesReducer,
     postComments: postCommentsReducer,
     chat: chatReducer,
+    feed: feedReducer,
   },
 });
 

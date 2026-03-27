@@ -1,7 +1,5 @@
-import { getAuthToken } from "@/lib/auth-storage";
+import { http } from "@/shared/api/http";
 import type { NotificationItem } from "../types/notification.types";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
 type WrappedNotificationResponse = {
   data?: NotificationItem;
@@ -46,28 +44,9 @@ function normalizeNotificationResponse(value: unknown): NotificationItem {
 export async function readNotification(
   notificationId: string,
 ): Promise<NotificationItem> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Access token is missing");
-  }
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/notifications/${notificationId}/read`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    },
+  const res = await http.patch<unknown>(
+    `/api/notifications/${notificationId}/read`,
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to mark notification as read");
-  }
-
-  const rawData: unknown = await response.json();
-
-  return normalizeNotificationResponse(rawData);
+  return normalizeNotificationResponse(res.data);
 }

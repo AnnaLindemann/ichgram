@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
@@ -17,11 +17,14 @@ import {
 } from "@/store/slices/profileSlice";
 import { seedFollowRelations, setFollowRelation } from "@/store/slices/followsSlice";
 import { createDirectConversation } from "@/features/chat/api/chat";
+import { ProfilePostsGridSkeleton } from "@/features/profile/components/ProfilePostsGridSkeleton";
+import { ProfileHeaderSkeleton } from "@/features/profile/components/ProfileHeaderSkeleton";
 
 export default function OtherProfilePage() {
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { viewedProfile, currentProfile, loading, error } = useAppSelector(
     (state) => state.profile,
@@ -71,7 +74,7 @@ async function handleOpenMessages() {
     return () => {
       dispatch(clearViewedProfile());
     };
-  }, [dispatch, id]);
+  }, [dispatch, id, location.key]);
 
     useEffect(() => {
     if (!currentProfile) {
@@ -134,7 +137,12 @@ async function handleOpenMessages() {
   }
 
    if (loading && !viewedProfile) {
-    return <div className="p-4">Loading profile...</div>;
+    return (
+    <div className="w-full max-w-[935px] mx-auto">
+      <ProfileHeaderSkeleton />
+      <ProfilePostsGridSkeleton />
+    </div>
+    )
   }
 
   if (error) {

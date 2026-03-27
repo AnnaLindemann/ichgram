@@ -1,15 +1,4 @@
 import { http } from "@/shared/api/http";
-import { getAuthToken } from "@/lib/auth-storage";
-
-function getAuthHeaders(): Record<string, string> | undefined {
-  const token = getAuthToken();
-
-  if (!token) {
-    return undefined;
-  }
-
-  return { Authorization: `Bearer ${token}` };
-}
 
 export type PostAuthorDto = {
   id: string;
@@ -55,7 +44,6 @@ export async function getPosts(
   authorId?: string,
 ): Promise<GetPostsResult> {
   const res = await http.get<ListPostsApiResponse>("/api/posts", {
-    headers: getAuthHeaders(),
     params: {
       limit: 10,
       page,

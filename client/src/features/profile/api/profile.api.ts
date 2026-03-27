@@ -1,7 +1,5 @@
 import { http } from "@/shared/api/http";
 import type { ApiResponse } from "@/shared/api/types";
-import { getAuthToken } from "@/lib/auth-storage";
-import axios from "axios";
 import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type { PublicUser, ProfilePostsData } from "../types/profile.types";
 
@@ -65,33 +63,15 @@ export type UploadMyAvatarResponse =
       message: string;
     };
 
-function getAuthHeaders(): Record<string, string> | undefined {
-  const token = getAuthToken();
-
-  if (!token) {
-    return undefined;
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 export async function getMeProfile(): Promise<ApiResponse<PublicUser>> {
-  const res = await http.get<ApiResponse<PublicUser>>("/api/users/me", {
-    headers: getAuthHeaders(),
-  });
-
+  const res = await http.get<ApiResponse<PublicUser>>("/api/users/me");
   return res.data;
 }
 
 export async function getUserProfileById(
   userId: string,
 ): Promise<ApiResponse<PublicUser>> {
-  const res = await http.get<ApiResponse<PublicUser>>(`/api/users/${userId}`, {
-    headers: getAuthHeaders(),
-  });
-
+  const res = await http.get<ApiResponse<PublicUser>>(`/api/users/${userId}`);
   return res.data;
 }
 
@@ -105,39 +85,21 @@ export type UpdateMeProfileInput = {
 export async function updateMeProfile(
   input: UpdateMeProfileInput,
 ): Promise<ApiResponse<PublicUser>> {
-  const res = await http.patch<ApiResponse<PublicUser>>("/api/users/me", input, {
-    headers: getAuthHeaders(),
-  });
-
+  const res = await http.patch<ApiResponse<PublicUser>>("/api/users/me", input);
   return res.data;
 }
 
 export async function uploadMyAvatar(
   file: File,
 ): Promise<UploadMyAvatarResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    return {
-      ok: false,
-      message: "Unauthorized",
-    };
-  }
-
   const formData = new FormData();
   formData.append("avatar", file);
 
   try {
-    const res = await axios.post<UploadMyAvatarResponse>(
-      `${import.meta.env.VITE_API_URL}/api/users/me/avatar`,
+    const res = await http.post<UploadMyAvatarResponse>(
+      "/api/users/me/avatar",
       formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
     );
-
     return res.data;
   } catch (error: unknown) {
     const message =
@@ -164,24 +126,11 @@ export async function uploadMyAvatar(
 export async function followUserById(
   userId: string,
 ): Promise<FollowActionResponse> {
-  const headers = getAuthHeaders();
-
-  if (!headers) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
     const res = await http.post<FollowActionResponse>(
       `/api/users/${userId}/follow`,
       {},
-      {
-        headers,
-      },
     );
-
     return res.data;
   } catch (error: unknown) {
     const message =
@@ -208,23 +157,10 @@ export async function followUserById(
 export async function unfollowUserById(
   userId: string,
 ): Promise<FollowActionResponse> {
-  const headers = getAuthHeaders();
-
-  if (!headers) {
-    return {
-      ok: false,
-      error: "Unauthorized",
-    };
-  }
-
   try {
     const res = await http.delete<FollowActionResponse>(
       `/api/users/${userId}/follow`,
-      {
-        headers,
-      },
     );
-
     return res.data;
   } catch (error: unknown) {
     const message =
@@ -280,7 +216,6 @@ export async function getFollowingCount(userId: string): Promise<number> {
 
 export async function getPostsByUser(userId: string): Promise<ProfilePostsData> {
   const res = await http.get<PostsListResponse>("/api/posts", {
-    headers: getAuthHeaders(),
     params: {
       authorId: userId,
       page: 1,
@@ -344,9 +279,7 @@ export type ProfilePostDetailsData = {
 export async function getPostById(
   postId: string,
 ): Promise<ProfilePostDetailsData> {
-  const res = await http.get<PostDetailsResponse>(`/api/posts/${postId}`, {
-    headers: getAuthHeaders(),
-  });
+  const res = await http.get<PostDetailsResponse>(`/api/posts/${postId}`);
 
   if (!res.data.ok) {
     throw new Error(res.data.error);

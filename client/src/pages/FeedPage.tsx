@@ -26,18 +26,14 @@ import {
   setPostLikeState,
 } from "@/store/slices/postLikesSlice";
 import { seedPostComments } from "@/store/slices/postCommentsSlice";
-
-type UiState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "empty" }
-  | {
-      status: "ready";
-      posts: FeedPost[];
-      page: number;
-      totalPages: number;
-      loadingMore: boolean;
-    };
+import {
+  setFeedLoading,
+  setFeedError,
+  setFeedEmpty,
+  initFeed,
+  setFeedLoadingMore,
+  appendFeedPosts,
+} from "@/store/slices/feedSlice";
 
 const FEED_GRID_CLASS =
   "grid grid-cols-1 gap-y-8 md:justify-center lg:grid-cols-[repeat(2,470px)] lg:justify-start lg:gap-x-9";
@@ -56,7 +52,13 @@ export default function FeedPage() {
     (state) => state.postComments.commentsCountByPostId,
   );
 
-  const [state, setState] = useState<UiState>({ status: "loading" });
+  const feedStatus = useAppSelector((state) => state.feed.status);
+  const feedError = useAppSelector((state) => state.feed.error);
+  const feedPosts = useAppSelector((state) => state.feed.posts);
+  const feedPage = useAppSelector((state) => state.feed.page);
+  const feedTotalPages = useAppSelector((state) => state.feed.totalPages);
+  const feedLoadingMore = useAppSelector((state) => state.feed.loadingMore);
+
   const [followError, setFollowError] = useState("");
   const [likeError, setLikeError] = useState("");
   const [submittingAuthorIds, setSubmittingAuthorIds] = useState<
@@ -70,7 +72,7 @@ export default function FeedPage() {
     let isMounted = true;
 
     async function loadInitial() {
-      setState({ status: "loading" });
+      dispatch(setFeedLoading());
 
       try {
         const resp = await getPosts(1);
@@ -80,12 +82,12 @@ export default function FeedPage() {
         }
 
         if (!resp.ok) {
-          setState({ status: "error", message: resp.error });
+          dispatch(setFeedError(resp.error));
           return;
         }
 
         if (resp.data.length === 0) {
-          setState({ status: "empty" });
+          dispatch(setFeedEmpty());
           return;
         }
 
@@ -121,19 +123,19 @@ export default function FeedPage() {
           ),
         );
 
-        setState({
-          status: "ready",
-          posts: mappedPosts,
-          page: resp.page,
-          totalPages: resp.totalPages,
-          loadingMore: false,
-        });
+        dispatch(
+          initFeed({
+            posts: mappedPosts,
+            page: resp.page,
+            totalPages: resp.totalPages,
+          }),
+        );
       } catch {
         if (!isMounted) {
           return;
         }
 
-        setState({ status: "error", message: "Network error" });
+        dispatch(setFeedError("Network error"));
       }
     }
 
@@ -145,32 +147,19 @@ export default function FeedPage() {
   }, [dispatch]);
 
   async function loadMore() {
-    if (state.status !== "ready" || state.loadingMore) {
+    if (feedStatus !== "ready" || feedLoadingMore) {
       return;
     }
 
-    const { posts, page, totalPages } = state;
-    const nextPage = page + 1;
+    const nextPage = feedPage + 1;
 
-    setState({
-      status: "ready",
-      posts,
-      page,
-      totalPages,
-      loadingMore: true,
-    });
+    dispatch(setFeedLoadingMore(true));
 
     try {
       const resp = await getPosts(nextPage);
 
       if (!resp.ok) {
-        setState({
-          status: "ready",
-          posts,
-          page,
-          totalPages,
-          loadingMore: false,
-        });
+        dispatch(setFeedLoadingMore(false));
         return;
       }
 
@@ -206,26 +195,20 @@ export default function FeedPage() {
         ),
       );
 
-      setState({
-        status: "ready",
-        posts: [...posts, ...mappedPosts],
-        page: resp.page,
-        totalPages: resp.totalPages,
-        loadingMore: false,
-      });
+      dispatch(
+        appendFeedPosts({
+          posts: mappedPosts,
+          page: resp.page,
+          totalPages: resp.totalPages,
+        }),
+      );
     } catch {
-      setState({
-        status: "ready",
-        posts,
-        page,
-        totalPages,
-        loadingMore: false,
-      });
+      dispatch(setFeedLoadingMore(false));
     }
   }
 
   async function handleFollowToggle(authorId: string) {
-    if (state.status !== "ready" || submittingAuthorIds[authorId]) {
+    if (feedStatus !== "ready" || submittingAuthorIds[authorId]) {
       return;
     }
 
@@ -233,7 +216,7 @@ export default function FeedPage() {
       return;
     }
 
-    const targetPost = state.posts.find((post) => post.author.id === authorId);
+    const targetPost = feedPosts.find((post) => post.author.id === authorId);
 
     if (!targetPost) {
       return;
@@ -295,11 +278,11 @@ export default function FeedPage() {
   }
 
   async function handleLikeToggle(postId: string) {
-    if (state.status !== "ready" || submittingLikeByPostId[postId]) {
+    if (feedStatus !== "ready" || submittingLikeByPostId[postId]) {
       return;
     }
 
-    const targetPost = state.posts.find((post) => post.id === postId);
+    const targetPost = feedPosts.find((post) => post.id === postId);
 
     if (!targetPost) {
       return;
@@ -353,7 +336,7 @@ export default function FeedPage() {
     setSubmittingLikeByPostId((prev) => ({ ...prev, [postId]: false }));
   }
 
-  if (state.status === "loading") {
+  if (feedStatus === "loading" || feedStatus === "idle") {
     return (
       <div className="w-full">
         <div className={FEED_GRID_CLASS}>
@@ -367,15 +350,15 @@ export default function FeedPage() {
     );
   }
 
-  if (state.status === "error") {
-    return <div className="p-4">Error: {state.message}</div>;
+  if (feedStatus === "error") {
+    return <div className="p-4">Error: {feedError}</div>;
   }
 
-  if (state.status === "empty") {
+  if (feedStatus === "empty") {
     return <div className="p-4">No posts yet</div>;
   }
 
-  const hasMore = state.page < state.totalPages;
+  const hasMore = feedPage < feedTotalPages;
 
   return (
     <div className="w-full">
@@ -392,7 +375,7 @@ export default function FeedPage() {
       ) : null}
 
       <div className={FEED_GRID_CLASS}>
-        {state.posts.map((post) => {
+        {feedPosts.map((post) => {
           const effectivePost: FeedPost = {
             ...post,
             isFollowingAuthor:
@@ -413,7 +396,7 @@ export default function FeedPage() {
                 onCommentClick={(postIdValue) => navigate(`/posts/${postIdValue}`)}
                 onFollowToggle={handleFollowToggle}
                 onLikeToggle={handleLikeToggle}
-                            />
+              />
             </div>
           );
         })}
@@ -425,10 +408,10 @@ export default function FeedPage() {
               onClick={() => {
                 void loadMore();
               }}
-              disabled={state.loadingMore}
+              disabled={feedLoadingMore}
               className="h-10 min-w-40 rounded-lg border border-gray-300 bg-white px-6 text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50"
             >
-              {state.loadingMore ? "Loading..." : "Load more"}
+              {feedLoadingMore ? "Loading..." : "Load more"}
             </button>
           ) : (
             <>

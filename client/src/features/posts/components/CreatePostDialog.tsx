@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { createPost } from "@/features/posts/api/posts.api";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
+import { prependFeedPost } from "@/store/slices/feedSlice";
+import { seedPostLikes } from "@/store/slices/postLikesSlice";
+import { seedPostComments } from "@/store/slices/postCommentsSlice";
 import upload from "../../../assets/icons/upload.svg";
 
 type CreatePostDialogProps = {
@@ -115,6 +118,43 @@ export function CreatePostDialog({
       setIsSubmitting(false);
       return;
     }
+
+    dispatch(
+      prependFeedPost({
+        id: result.data.id,
+        imageUrl: result.data.imageUrl,
+        caption: result.data.caption || null,
+        createdAt: result.data.createdAt,
+        isFollowingAuthor: false,
+        likedByMe: result.data.likedByMe,
+        author: {
+          id: result.data.author.id,
+          username: result.data.author.username,
+          avatarUrl: result.data.author.avatarUrl,
+        },
+        likesCount: result.data.likesCount,
+        commentsCount: result.data.commentsCount,
+      }),
+    );
+
+    dispatch(
+      seedPostLikes([
+        {
+          postId: result.data.id,
+          likedByMe: result.data.likedByMe,
+          likesCount: result.data.likesCount,
+        },
+      ]),
+    );
+
+    dispatch(
+      seedPostComments([
+        {
+          postId: result.data.id,
+          commentsCount: result.data.commentsCount,
+        },
+      ]),
+    );
 
     await dispatch(fetchMyProfile());
 
