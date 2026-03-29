@@ -27,21 +27,28 @@ export const updateMeSchema = z
       .max(200, "bio must be less than or equal to 200 characters")
       .optional(),
 
-    avatarUrl: z
-      .string()
-      .trim()
-      .max(500, "avatarUrl must be less than or equal to 500 characters")
-      .url("avatarUrl must be a valid URL")
-      .optional()
-      .or(z.literal("")),
+   avatarUrl: z
+  .string()
+  .trim()
+  .max(500, "avatarUrl must be less than or equal to 500 characters")
+  .refine(
+    (value) =>
+      value === "" ||
+      value.startsWith("/uploads/") ||
+      /^https?:\/\//.test(value) ||
+      value.startsWith("data:image/"),
+    "avatarUrl must be a valid URL"
+  )
+  .optional()
+  .or(z.literal("")),
 
-    website: z
-      .string()
-      .trim()
-      .max(200, "website must be less than or equal to 200 characters")
-      .url("website must be a valid URL")
-      .optional()
-      .or(z.literal("")),
+website: z
+  .string()
+  .trim()
+  .max(200, "website must be less than or equal to 200 characters")
+  .url("website must be a valid URL")
+  .optional()
+  .or(z.literal("")),
   })
   .refine(
     (data) =>
