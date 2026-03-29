@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type { PublicUser, ProfileStats } from "../types/profile.types";
 
 type ProfileHeaderProps = {
@@ -8,30 +8,14 @@ type ProfileHeaderProps = {
   actions?: ReactNode;
 };
 
-function getAssetBaseUrl(): string {
-  const apiUrl = import.meta.env.VITE_API_URL ?? "";
 
-  return apiUrl.replace(/\/api\/?$/, "");
-}
-
-function resolveAvatarSrc(avatarUrl?: string | null): string {
-  if (!avatarUrl) {
-    return "/placeholder-avatar.svg";
-  }
-
-  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
-    return avatarUrl;
-  }
-
-  return `${getAssetBaseUrl()}${avatarUrl}`;
-}
 
 export function ProfileHeader({
   user,
   stats,
   actions,
 }: ProfileHeaderProps) {
-  const avatarSrc = resolveAvatarSrc(user.avatarUrl);
+  const avatarSrc = resolveMediaUrl(user.avatarUrl);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
 
   const shouldShowBioToggle = (user.bio?.length ?? 0) > 110;

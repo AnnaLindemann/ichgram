@@ -1,5 +1,5 @@
 import type { ProfilePostPreview } from "../types/profile.types";
-
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 type ProfilePostsGridProps = {
   posts: ProfilePostPreview[];
   onPostClick: (postId: string) => void;
@@ -27,7 +27,7 @@ export function ProfilePostsGrid({
           onClick={() => onPostClick(post.id)}
         >
           <img
-            src={post.imageUrl}
+            src={resolveMediaUrl(post.imageUrl)}
             alt="User post"
             className="h-full w-full object-cover"
           />

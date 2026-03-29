@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getExplorePosts } from "@/features/expoler/api/getExplorePosts";
 import type { ExplorePost } from "@/features/expoler/types/explore.types";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 
 type ExploreState =
   | { status: "loading" }
@@ -23,8 +24,8 @@ function ExploreCard({
       className="mb-[2px] block w-full break-inside-avoid overflow-hidden bg-[#f5f5f5] text-left"
       aria-label="Open post"
     >
-      <img
-        src={post.imageUrl}
+     <img
+  src={resolveMediaUrl(post.imageUrl)}
         alt={post.caption || "Explore post"}
         className="block w-full object-cover"
         loading="lazy"

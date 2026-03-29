@@ -1,6 +1,6 @@
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { Heart, MessageCircle } from "lucide-react";
-
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type { FeedPost } from "../types/feed-post.types";
 
 type FeedPostCardProps = {
@@ -98,7 +98,7 @@ export function FeedPostCard({
         aria-label="Open post"
       >
         <img
-          src={post.imageUrl}
+         src={resolveMediaUrl(post.imageUrl)}
           alt={post.caption || "Post image"}
           className="h-full w-full object-cover"
           loading="lazy"

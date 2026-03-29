@@ -34,6 +34,7 @@ import {
   seedPostComments,
 } from "@/store/slices/postCommentsSlice";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 
 function getInitial(username: string) {
   return username.trim().charAt(0).toUpperCase() || "U";
@@ -556,7 +557,7 @@ const shouldShowLikedHeart = effectiveLikesCount > 0;
             <>
               <div className="min-w-0 flex-1 bg-black">
                 <img
-                  src={post.imageUrl}
+                  src={resolveMediaUrl(post.imageUrl)}
                   alt="Post"
                   className="h-full w-full object-cover"
                 />
@@ -914,7 +915,7 @@ const shouldShowLikedHeart = effectiveLikesCount > 0;
 
                 <div className="flex-1 bg-black">
                   <img
-                    src={post.imageUrl}
+                    src={resolveMediaUrl(post.imageUrl)}
                     alt="Post"
                     className="h-full max-h-[55vh] w-full object-cover"
                   />

@@ -12,27 +12,12 @@ import {
   type UpdateMeProfileInput,
 } from "@/features/profile/api/profile.api";
 import { updateStoredUsername } from "@/lib/auth-storage";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type { EditProfileFormValues } from "@/features/profile/types/profile.types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
 
-function getAssetBaseUrl(): string {
-  const apiUrl = import.meta.env.VITE_API_URL ?? "";
 
-  return apiUrl.replace(/\/api\/?$/, "");
-}
-
-function resolveAvatarSrc(avatarUrl?: string | null): string {
-  if (!avatarUrl) {
-    return "/placeholder-avatar.svg";
-  }
-
-  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
-    return avatarUrl;
-  }
-
-  return `${getAssetBaseUrl()}${avatarUrl}`;
-}
 
 export default function EditProfilePage() {
   const dispatch = useAppDispatch();
@@ -116,9 +101,9 @@ export default function EditProfilePage() {
         return;
       }
 
-    const fullUrl = `${getAssetBaseUrl()}${response.data.avatarUrl}`;
 
-form.setValue("avatarUrl", fullUrl, {
+
+form.setValue("avatarUrl", response.data.avatarUrl, {
   shouldDirty: true,
   shouldTouch: true,
   shouldValidate: true,
@@ -198,9 +183,9 @@ form.setValue("avatarUrl", fullUrl, {
   const aboutValue = form.watch("bio") ?? "";
   const avatarUrlValue = form.watch("avatarUrl") ?? "";
 
-  const avatarSrc = localPreviewUrl
-    ? localPreviewUrl
-    : resolveAvatarSrc(avatarUrlValue || user?.avatarUrl);
+ const avatarSrc = localPreviewUrl
+  ? localPreviewUrl
+  : resolveMediaUrl(avatarUrlValue || user?.avatarUrl);
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
