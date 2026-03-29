@@ -15,13 +15,9 @@ import { notificationsRouter } from "./modules/notifications/notifications.route
 export function createApp(){
   const app = express();
  
- app.use(
+app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://ichgram-wheat.vercel.app",
-      "https://ichgram-844snh9qx-annalindemanns-projects.vercel.app",
-    ],
+    origin: true,
     credentials: true,
   }),
 ); 
