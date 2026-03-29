@@ -124,7 +124,6 @@ export async function isFollowing(
   return follow !== null;
 }
 
-// Returns the set of targetUserIds that viewerId follows — single DB query.
 export async function getFollowingSet(
   viewerId: string,
   targetUserIds: string[],

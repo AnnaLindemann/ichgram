@@ -131,7 +131,7 @@ export default function TroubleLoggingInPage() {
         return;
       }
 
-      setSuccessMessage(data.message);
+      setSuccessMessage("Demo mode: email sending is not implemented");
     } catch {
       setServerError("Network error. Please try again.");
     }
@@ -159,6 +159,10 @@ export default function TroubleLoggingInPage() {
                 <h1 className="mt-4 text-center text-[30px] font-semibold leading-[36px] text-[#262626]">
                   Trouble logging in?
                 </h1>
+
+                <span className="mt-2 inline-block rounded bg-amber-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                  Demo
+                </span>
 
                 <p className="mt-3 max-w-[320px] text-center text-[16px] leading-[21px] text-[#737373]">
                   Enter your email, phone, or username and we&apos;ll send you a

@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-// Used when creating a post via multipart/form-data — image comes from req.file,
-// only caption is read from req.body.
 export const createPostBodySchema = z.object({
   caption: z
     .string()

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { createPost } from "@/features/posts/api/posts.api";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
 import { prependFeedPost } from "@/store/slices/feedSlice";
 import { seedPostLikes } from "@/store/slices/postLikesSlice";
@@ -29,6 +29,7 @@ export function CreatePostDialog({
   onOpenChange,
 }: CreatePostDialogProps) {
   const dispatch = useAppDispatch();
+  const currentProfile = useAppSelector((state) => state.profile.currentProfile);
 
   const [caption, setCaption] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -226,7 +227,7 @@ export function CreatePostDialog({
               </div>
 
               <span className="text-sm font-semibold text-[#262626]">
-                skai_laba
+                {currentProfile?.user.username ?? ""}
               </span>
             </div>
 

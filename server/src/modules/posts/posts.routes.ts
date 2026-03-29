@@ -17,7 +17,6 @@ import { HttpError } from "../../shared/http-error.js";
 
 export const postRouter = Router();
 
-// Convert multer errors to HttpError so errorMiddleware formats them uniformly
 function handlePostImageUpload(req: Request, res: Response, next: NextFunction): void {
   uploadSinglePostImage(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError) {

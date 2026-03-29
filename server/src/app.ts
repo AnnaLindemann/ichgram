@@ -15,13 +15,14 @@ import { notificationsRouter } from "./modules/notifications/notifications.route
 export function createApp(){
   const app = express();
   app.use(helmet());
-  app.use(cors({
-    origin: "http://localhost:5173",
+ app.use(
+  cors({
+    origin: process.env.CLIENT_URL ?? "http://localhost:5173",
     credentials: true,
-  }),);
+  }),
+);
   app.use(morgan("dev"));
   app.use(express.json({limit: "2mb"}));
-  // Serve uploaded files (avatars, etc.) as static assets
   app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "uploads"), {

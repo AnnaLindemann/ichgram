@@ -37,7 +37,7 @@ export function SidebarNav({
     (item) =>
       item.showInSidebar &&
       item.id !== "profile" &&
-      item.id !== "logout" // 
+      item.id !== "logout"
   );
 
   const profileItem = navItems.find(
@@ -53,7 +53,6 @@ export function SidebarNav({
           <img src={Logo} alt="Ichgram" className="h-14 w-auto" />
         </NavLink>
 
-        {/* NAV */}
         <nav className="flex flex-col gap-2">
           {topItems.map((item) => {
             const DefaultIcon = item.icon;

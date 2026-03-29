@@ -48,5 +48,5 @@ usersRouter.delete("/:id/follow", requireAuth, asyncHandler(unfollowUserControll
 usersRouter.get("/:id/followers", asyncHandler(getFollowersController));
 usersRouter.get("/:id/following", asyncHandler(getFollowingController));
 
-usersRouter.get("/", asyncHandler(listUsers));
+usersRouter.get("/", requireAuth, asyncHandler(listUsers));
 usersRouter.get("/:id", optionalAuth, asyncHandler(getUserById));

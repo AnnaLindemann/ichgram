@@ -9,7 +9,6 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/gif",
 ]);
 
-// 5 MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const avatarStorage = multer.diskStorage({
@@ -42,14 +41,12 @@ function fileFilter(
   }
 }
 
-// Field name: "avatar"
 export const uploadSingleImage = multer({
   storage: avatarStorage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE },
 }).single("avatar");
 
-// Field name: "image"
 export const uploadSinglePostImage = multer({
   storage: postStorage,
   fileFilter,
