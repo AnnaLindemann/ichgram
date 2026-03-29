@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { navItems } from "./navItems";
 import { logout } from "@/lib/logout";
 import { LogOut } from "lucide-react";
+import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 
 type SidebarNavProps = {
   isSearchActive: boolean;
@@ -43,6 +44,10 @@ export function SidebarNav({
   const profileItem = navItems.find(
     (item) => item.showInSidebar && item.id === "profile"
   );
+
+  const resolvedProfileAvatarUrl = profileAvatarUrl
+  ? resolveMediaUrl(profileAvatarUrl)
+  : null;
 
   return (
     <aside className="hidden self-stretch border-r border-[#dbdbdb] lg:flex lg:w-64 lg:flex-col lg:bg-background">
@@ -187,16 +192,16 @@ export function SidebarNav({
 
                 return (
                   <>
-                    {profileAvatarUrl ? (
-                      <img
-                        src={profileAvatarUrl}
-                        alt="My profile"
-                        className={cn(
-                          "h-6 w-6 rounded-full object-cover",
-                          isActive ? "ring-2 ring-black" : ""
-                        )}
-                      />
-                    ) : (
+             {resolvedProfileAvatarUrl ? (
+  <img
+    src={resolvedProfileAvatarUrl}
+    alt="My profile"
+    className={cn(
+      "h-6 w-6 rounded-full object-cover",
+      isActive ? "ring-2 ring-black" : ""
+    )}
+  />
+) : (
                       <ProfileIcon className="h-6 w-6" />
                     )}
                     <span>{profileItem.label}</span>
