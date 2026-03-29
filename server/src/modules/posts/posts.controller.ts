@@ -29,7 +29,8 @@ export async function createPost(req: Request, res: Response): Promise<void> {
     throw new HttpError(400, "image file is required");
   }
 
-  const imageUrl = `/uploads/${req.file.filename}`;
+  // Convert uploaded buffer to Base64 data URL so it survives App Runner restarts.
+  const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
   const { caption } = createPostBodySchema.parse(req.body);
 
   const existed = await UserModel.findById(authorId).exec();
@@ -216,7 +217,9 @@ export async function updatePostCaption(req: Request, res: Response): Promise<vo
   }
 
   const { caption } = updatePostSchema.parse(req.body);
-  const newImageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+  const newImageUrl = req.file
+    ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
+    : undefined;
 
   if (caption === undefined && newImageUrl === undefined) {
     throw new HttpError(400, "caption or image is required");

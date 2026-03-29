@@ -1,6 +1,4 @@
 import multer from "multer";
-import path from "node:path";
-import crypto from "node:crypto";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -11,23 +9,9 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-const avatarStorage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const unique = crypto.randomBytes(8).toString("hex");
-    cb(null, `avatar-${Date.now()}-${unique}${ext}`);
-  },
-});
-
-const postStorage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const unique = crypto.randomBytes(8).toString("hex");
-    cb(null, `post-${Date.now()}-${unique}${ext}`);
-  },
-});
+// Store files in memory so the buffer is available for Base64 conversion.
+// No disk writes — compatible with ephemeral App Runner filesystem.
+const memoryStorage = multer.memoryStorage();
 
 function fileFilter(
   _req: Express.Request,
@@ -42,13 +26,13 @@ function fileFilter(
 }
 
 export const uploadSingleImage = multer({
-  storage: avatarStorage,
+  storage: memoryStorage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE },
 }).single("avatar");
 
 export const uploadSinglePostImage = multer({
-  storage: postStorage,
+  storage: memoryStorage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE },
 }).single("image");

@@ -8,6 +8,11 @@ export function resolveMediaUrl(url?: string | null): string {
     return "/placeholder-avatar.svg";
   }
 
+  // Base64 data URLs are self-contained — return as-is, no base URL needed.
+  if (url.startsWith("data:")) {
+    return url;
+  }
+
   const assetBaseUrl = getAssetBaseUrl();
 
   if (url.startsWith("http://localhost:5000/uploads/")) {

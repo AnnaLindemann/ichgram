@@ -133,7 +133,8 @@ export async function uploadAvatar(req: Request, res: Response): Promise<void> {
     throw new HttpError(400, "avatar file is required");
   }
 
-  const avatarUrl = `/uploads/${req.file.filename}`;
+  // Convert uploaded buffer to Base64 data URL so it survives App Runner restarts.
+  const avatarUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
 
   const user = await UserModel.findById(req.user.id).exec();
 
