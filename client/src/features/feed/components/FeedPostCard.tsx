@@ -114,7 +114,7 @@ export function FeedPostCard({
           className="text-black disabled:opacity-60"
         >
           <Heart
-            className={`h-7 w-7 ${post.likedByMe ? "fill-red-500 text-red-500" : ""}`}
+            className={`h-7 w-7 ${post.likesCount > 0 ? "fill-red-500 text-red-500" : ""}`}
             strokeWidth={1.75}
           />
         </button>

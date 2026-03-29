@@ -92,6 +92,7 @@ if (!post) {
 }
 
 const viewerId = req.user?.id;
+
 const postId = String(post._id);
 const authorId = (post.author as unknown as { _id: { toString(): string } })._id.toString();
 
@@ -144,8 +145,6 @@ const [posts, total] = await Promise.all([
 
 const postIds = posts.map((post) => String(post._id));
 const viewerId = req.user?.id;
-
-// Collect unique author IDs for a single batch follow lookup.
 const authorIds = [
   ...new Set(
     posts.map(

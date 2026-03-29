@@ -23,7 +23,7 @@ export async function getLikesMetaForPosts(
     .lean();
 
   const likedPostIdsByViewer = new Set<string>();
-
+   
   if (viewerId && mongoose.Types.ObjectId.isValid(viewerId)) {
     for (const like of likes) {
       if (String(like.userId) === viewerId) {

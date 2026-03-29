@@ -72,12 +72,20 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
   }
 
   const parsed = updateMeSchema.parse(req.body);
-  const { fullName, bio, avatarUrl, website } = parsed;
+  const { username, fullName, bio, avatarUrl, website } = parsed;
 
   const user = await UserModel.findById(req.user.id).exec();
 
   if (!user) {
     throw new HttpError(404, "user not found");
+  }
+
+  if (username !== undefined && username !== user.username) {
+    const existing = await UserModel.findOne({ username }).lean().exec();
+    if (existing) {
+      throw new HttpError(409, "Username already taken");
+    }
+    user.username = username;
   }
 
   if (fullName !== undefined) {
@@ -96,7 +104,19 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
     user.website = website;
   }
 
-  await user.save();
+  try {
+    await user.save();
+  } catch (err: unknown) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      throw new HttpError(409, "Username already taken");
+    }
+    throw err;
+  }
 
   res.status(200).json({
     ok: true,

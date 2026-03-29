@@ -50,3 +50,9 @@ export function clearAuthSession(): void {
 export function isAuthenticated(): boolean {
   return Boolean(getAuthToken());
 }
+
+export function updateStoredUsername(username: string): void {
+  const user = getAuthUser();
+  if (!user) return;
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...user, username }));
+}

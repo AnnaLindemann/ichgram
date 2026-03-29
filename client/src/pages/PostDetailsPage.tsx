@@ -517,6 +517,8 @@ export default function PostDetailsPage() {
     ? (likesCountByPostId[post.id] ?? post.likesCount)
     : 0;
 
+const shouldShowLikedHeart = effectiveLikesCount > 0;
+
   const effectiveCommentsCount = post
     ? (commentsCountByPostId[post.id] ?? post.commentsCount)
     : 0;
@@ -563,17 +565,19 @@ export default function PostDetailsPage() {
               <div className="hidden w-full max-w-[420px] flex-col bg-white md:flex">
                 <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    {post.author.avatarUrl ? (
-                      <img
-                        src={post.author.avatarUrl}
-                        alt={post.author.username}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                        {getInitial(post.author.username)}
-                      </div>
-                    )}
+                   <Link to={authorProfilePath} className="shrink-0">
+  {post.author.avatarUrl ? (
+    <img
+      src={post.author.avatarUrl}
+      alt={post.author.username}
+      className="h-8 w-8 rounded-full object-cover"
+    />
+  ) : (
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
+      {getInitial(post.author.username)}
+    </div>
+  )}
+</Link>
 
                     <div className="flex min-w-0 items-center gap-2">
                      <Link
@@ -783,15 +787,15 @@ export default function PostDetailsPage() {
                       type="button"
                       onClick={handleLikeToggle}
                       disabled={isSubmittingLike}
-                      aria-label={effectiveLikedByMe ? "Unlike post" : "Like post"}
+                      aria-label={shouldShowLikedHeart ? "Unlike post" : "Like post"}
                       className="text-left text-sm font-medium hover:opacity-70 disabled:opacity-60"
                     >
-                      <Heart
-                        className={`h-6 w-6 ${
-                          effectiveLikedByMe ? "fill-red-500 text-red-500" : ""
-                        }`}
-                        strokeWidth={1.75}
-                      />
+                     <Heart
+  className={`h-6 w-6 ${
+    shouldShowLikedHeart ? "fill-red-500 text-red-500" : ""
+  }`}
+  strokeWidth={1.75}
+/>
                     </button>
 
                     <button
@@ -848,18 +852,19 @@ export default function PostDetailsPage() {
               <div className="flex w-full flex-col bg-white md:hidden">
                 <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    {post.author.avatarUrl ? (
-                      <img
-                        src={post.author.avatarUrl}
-                        alt={post.author.username}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                        {getInitial(post.author.username)}
-                      </div>
-                    )}
-
+            <Link to={authorProfilePath} className="mt-0.5 shrink-0">
+  {post.author.avatarUrl ? (
+    <img
+      src={post.author.avatarUrl}
+      alt={post.author.username}
+      className="h-8 w-8 rounded-full object-cover"
+    />
+  ) : (
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
+      {getInitial(post.author.username)}
+    </div>
+  )}
+</Link>
                     <div className="flex min-w-0 items-center gap-2">
                 <Link
   to={authorProfilePath}

@@ -11,6 +11,7 @@ import {
   uploadMyAvatar,
   type UpdateMeProfileInput,
 } from "@/features/profile/api/profile.api";
+import { updateStoredUsername } from "@/lib/auth-storage";
 import type { EditProfileFormValues } from "@/features/profile/types/profile.types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
@@ -49,7 +50,7 @@ export default function EditProfilePage() {
 
   const form = useForm<EditProfileFormValues>({
     defaultValues: {
-      fullName: "",
+      username: "",
       bio: "",
       website: "",
       avatarUrl: "",
@@ -68,7 +69,7 @@ export default function EditProfilePage() {
     }
 
     form.reset({
-      fullName: currentProfile.user.fullName,
+      username: currentProfile.user.username,
       bio: currentProfile.user.bio,
       website: currentProfile.user.website,
       avatarUrl: currentProfile.user.avatarUrl,
@@ -138,12 +139,28 @@ form.setValue("avatarUrl", fullUrl, {
       setSubmitError(null);
       setIsSaving(true);
 
+      const trimmedUsername = values.username.trim().toLowerCase();
+
+      if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+        setSubmitError("Username must be between 3 and 30 characters");
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_.]+$/.test(trimmedUsername)) {
+        setSubmitError(
+          "Username can only contain letters, numbers, dots, and underscores",
+        );
+        return;
+      }
+
       const payload: UpdateMeProfileInput = {
-        fullName: values.fullName.trim(),
         bio: values.bio.trim(),
         website: values.website.trim(),
         avatarUrl: values.avatarUrl.trim(),
       };
+      if (trimmedUsername !== currentProfile?.user.username) {
+        payload.username = trimmedUsername;
+      }
 
       const response = await updateMeProfile(payload);
 
@@ -152,6 +169,7 @@ form.setValue("avatarUrl", fullUrl, {
         return;
       }
 
+      updateStoredUsername(response.data.username);
       await dispatch(fetchMyProfile()).unwrap();
       navigate("/profile");
     } catch (error) {
@@ -226,12 +244,12 @@ form.setValue("avatarUrl", fullUrl, {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full name</Label>
+          <Label htmlFor="username">Username</Label>
           <Input
-            id="fullName"
+            id="username"
             className="rounded-xl"
             placeholder=""
-            {...form.register("fullName")}
+            {...form.register("username")}
           />
         </div>
 

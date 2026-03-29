@@ -660,7 +660,7 @@ export default function MessagesPage() {
         <aside className="flex w-full max-w-[360px] flex-col border-r border-[#DBDBDB]">
           <div className="border-b border-[#DBDBDB] px-6 py-5">
             <h1 className="text-xl font-semibold text-[#262626]">
-              {authUser?.username ?? "Messages"}
+              {currentProfile?.user.username ?? authUser?.username ?? "Messages"}
             </h1>
           </div>
 

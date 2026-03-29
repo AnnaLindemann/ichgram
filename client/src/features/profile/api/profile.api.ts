@@ -76,7 +76,7 @@ export async function getUserProfileById(
 }
 
 export type UpdateMeProfileInput = {
-  fullName?: string;
+  username?: string;
   bio?: string;
   avatarUrl?: string;
   website?: string;

@@ -22,7 +22,7 @@ import {
   setFollowRelation,
 } from "@/store/slices/followsSlice";
 import {
-  syncPostLikesFromServer,
+  mergePostLikesFromServer,
   setPostLikeState,
 } from "@/store/slices/postLikesSlice";
 import { seedPostComments } from "@/store/slices/postCommentsSlice";
@@ -105,7 +105,7 @@ export default function FeedPage() {
         );
 
         dispatch(
-          syncPostLikesFromServer(
+          mergePostLikesFromServer(
             mappedPosts.map((p) => ({
               postId: p.id,
               likedByMe: p.likedByMe,
@@ -177,7 +177,7 @@ export default function FeedPage() {
       );
 
       dispatch(
-        syncPostLikesFromServer(
+        mergePostLikesFromServer(
           mappedPosts.map((p) => ({
             postId: p.id,
             likedByMe: p.likedByMe,

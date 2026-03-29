@@ -43,7 +43,7 @@ export type ViewedProfileData = {
 };
 
 export type EditProfileFormValues = {
-  fullName: string;
+  username: string;
   bio: string;
   website: string;
   avatarUrl: string;

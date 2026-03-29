@@ -2,6 +2,18 @@ import { z } from "zod";
 
 export const updateMeSchema = z
   .object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "username must be at least 3 characters")
+      .max(30, "username must be at most 30 characters")
+      .regex(
+        /^[a-zA-Z0-9_.]+$/,
+        "username can only contain letters, numbers, dots, and underscores"
+      )
+      .transform((value) => value.toLowerCase())
+      .optional(),
+
     fullName: z
       .string()
       .trim()
@@ -33,6 +45,7 @@ export const updateMeSchema = z
   })
   .refine(
     (data) =>
+      data.username !== undefined ||
       data.fullName !== undefined ||
       data.bio !== undefined ||
       data.avatarUrl !== undefined ||

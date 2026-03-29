@@ -7,25 +7,22 @@ export const http = axios.create({
   timeout: 10_000,
 });
 
-
 http.interceptors.request.use((config) => {
   const token = getAuthToken();
 
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;
 });
 
-
 http.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-
       logout();
-
 
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
@@ -35,4 +32,3 @@ http.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
