@@ -30,7 +30,7 @@ function handlePostImageUpload(req: Request, res: Response, next: NextFunction):
 }
 
 postRouter.post("/", requireAuth, handlePostImageUpload, asyncHandler(createPost));
-postRouter.get("/", requireAuth, asyncHandler(listPosts));
+postRouter.get("/", optionalAuth, asyncHandler(listPosts));
 postRouter.get("/:id", optionalAuth, asyncHandler(getPostById));
 postRouter.patch("/:id", requireAuth, handlePostImageUpload, asyncHandler(updatePostCaption));
 postRouter.delete("/:id", requireAuth, asyncHandler(deletePost));

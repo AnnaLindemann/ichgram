@@ -3,6 +3,8 @@ import type {
   SearchUsersResponse,
 } from "../types/search-user.types";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
+
 type SearchUsersResult =
   | { ok: true; data: SearchUser[] }
   | { ok: false; error: string };
@@ -19,7 +21,7 @@ export async function searchUsers(query: string): Promise<SearchUsersResult> {
     limit: "8",
   });
 
-  const response = await fetch(`/api/users/search?${params.toString()}`, {
+  const response = await fetch(`${API_BASE_URL}/api/users/search?${params.toString()}`, {
     method: "GET",
     credentials: "include",
   });
