@@ -30,7 +30,7 @@ export const updateMeSchema = z
    avatarUrl: z
   .string()
   .trim()
-  .max(500, "avatarUrl must be less than or equal to 500 characters")
+  // No length limit: value can be a Base64 data URL (very long) or a short path/URL.
   .refine(
     (value) =>
       value === "" ||
