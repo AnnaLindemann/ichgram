@@ -22,7 +22,7 @@ import {
   setFollowRelation,
 } from "@/store/slices/followsSlice";
 import {
-  seedPostLikes,
+  syncPostLikesFromServer,
   setPostLikeState,
 } from "@/store/slices/postLikesSlice";
 import { seedPostComments } from "@/store/slices/postCommentsSlice";
@@ -105,7 +105,7 @@ export default function FeedPage() {
         );
 
         dispatch(
-          seedPostLikes(
+          syncPostLikesFromServer(
             mappedPosts.map((p) => ({
               postId: p.id,
               likedByMe: p.likedByMe,
@@ -177,7 +177,7 @@ export default function FeedPage() {
       );
 
       dispatch(
-        seedPostLikes(
+        syncPostLikesFromServer(
           mappedPosts.map((p) => ({
             postId: p.id,
             likedByMe: p.likedByMe,
@@ -360,7 +360,10 @@ export default function FeedPage() {
 
   const hasMore = feedPage < feedTotalPages;
 
+  
+
   return (
+    
     <div className="w-full">
       {followError ? (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -396,6 +399,7 @@ export default function FeedPage() {
                 onCommentClick={(postIdValue) => navigate(`/posts/${postIdValue}`)}
                 onFollowToggle={handleFollowToggle}
                 onLikeToggle={handleLikeToggle}
+                onAuthorClick={(authorId) => navigate(`/profile/${authorId}`)}
               />
             </div>
           );

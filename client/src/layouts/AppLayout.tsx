@@ -140,22 +140,24 @@ export default function AppLayout() {
     <div className="min-h-dvh bg-background">
       <MobileTopBar />
 
-      <div className="flex min-h-dvh w-full">
-        <SidebarNav
-          isSearchActive={isSearchOpen}
-          isNotificationsActive={isNotificationsOpen}
-          unreadNotificationsCount={unreadNotificationsCount}
-          profileAvatarUrl={currentProfile?.user.avatarUrl ?? null}
-          onSearchClick={openSearch}
-          onNotificationsClick={openNotifications}
-          onRouteItemClick={closeOverlays}
-          onCreateClick={openCreatePost}
-        />
+  <div className="flex min-h-dvh w-full">
+  <div className="hidden lg:block fixed left-0 top-0 h-screen w-[240px]">
+    <SidebarNav
+      isSearchActive={isSearchOpen}
+      isNotificationsActive={isNotificationsOpen}
+      unreadNotificationsCount={unreadNotificationsCount}
+      profileAvatarUrl={currentProfile?.user.avatarUrl ?? null}
+      onSearchClick={openSearch}
+      onNotificationsClick={openNotifications}
+      onRouteItemClick={closeOverlays}
+      onCreateClick={openCreatePost}
+    />
+  </div>
 
-        <main className="flex-1 px-4 py-4 pt-4 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)] lg:pb-4">
-          <Outlet />
-        </main>
-      </div>
+  <main className="flex-1 px-4 py-4 pt-4 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)] lg:ml-[285px] lg:pb-4">
+    <Outlet />
+  </main>
+</div>
 
       <div className="hidden md:block">
         <Footer

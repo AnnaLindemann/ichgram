@@ -10,6 +10,7 @@ type FeedPostCardProps = {
   isSubmittingLike: boolean;
   onPostClick: (postId: string) => void;
   onCommentClick: (postId: string) => void;
+  onAuthorClick: (authorId: string) => void;
   onFollowToggle: (authorId: string) => void;
   onLikeToggle: (postId: string) => void;
 };
@@ -21,6 +22,7 @@ export function FeedPostCard({
   isSubmittingLike,
   onPostClick,
   onCommentClick,
+  onAuthorClick,
   onFollowToggle,
   onLikeToggle,
 }: FeedPostCardProps) {
@@ -28,20 +30,31 @@ export function FeedPostCard({
     <article className="overflow-hidden rounded-xl border bg-white">
       <div className="flex items-center justify-between px-3 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          {post.author.avatarUrl ? (
-            <img
-              src={post.author.avatarUrl}
-              alt={post.author.username}
-              className="h-8 w-8 rounded-full object-cover"
-            />
-          ) : (
-            <div className="h-8 w-8 rounded-full bg-gray-300" />
-          )}
+          <button
+            type="button"
+            onClick={() => onAuthorClick(post.author.id)}
+            className="shrink-0"
+            aria-label={`Open ${post.author.username} profile`}
+          >
+            {post.author.avatarUrl ? (
+              <img
+                src={post.author.avatarUrl}
+                alt={post.author.username}
+                className="h-8 w-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-gray-300" />
+            )}
+          </button>
 
           <div className="flex min-w-0 items-center gap-1.5 text-sm">
-            <p className="truncate font-medium text-black">
+            <button
+              type="button"
+              onClick={() => onAuthorClick(post.author.id)}
+              className="truncate font-medium text-black"
+            >
               {post.author.username}
-            </p>
+            </button>
 
             <span className="shrink-0 text-xs text-gray-400">•</span>
 
@@ -116,21 +129,31 @@ export function FeedPostCard({
         </button>
       </div>
 
-      <div className="px-3 pb-3 pt-2 text-sm">
-        <p className="font-medium text-black">{post.likesCount} likes</p>
+      <div className="px-3 pb-3 pt-2 text-sm min-h-[88px]">
+        {post.likesCount > 0 ? (
+          <p className="font-medium text-black">{post.likesCount} likes</p>
+        ) : null}
 
         <p className="mt-1 text-black">
-          <span className="mr-1 font-medium">{post.author.username}</span>
+          <button
+            type="button"
+            onClick={() => onAuthorClick(post.author.id)}
+            className="mr-1 font-medium"
+          >
+            {post.author.username}
+          </button>
           {post.caption}
         </p>
 
-        <button
-          type="button"
-          onClick={() => onCommentClick(post.id)}
-          className="mt-1 text-xs text-gray-500"
-        >
-          View all comments ({post.commentsCount})
-        </button>
+        {post.commentsCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => onCommentClick(post.id)}
+            className="mt-1 text-xs text-gray-500"
+          >
+            View all comments ({post.commentsCount})
+          </button>
+        ) : null}
       </div>
     </article>
   );

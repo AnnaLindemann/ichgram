@@ -81,7 +81,7 @@ export default function RegisterPage() {
         user: data.data.user,
       });
 
-      navigate("/");
+      navigate("/login");
     } catch {
       setServerError("Network error. Please try again.");
     }

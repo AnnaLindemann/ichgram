@@ -7,6 +7,7 @@ import {
   Heart,
   PlusSquare,
   User,
+  LogOut
 } from "lucide-react";
 
 type IconComponent = ComponentType<{ className?: string }>;
@@ -82,6 +83,7 @@ function UserFilledIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
 
 export type NavItem = {
   id: string;
@@ -160,5 +162,14 @@ export const navItems: NavItem[] = [
     activeIcon: UserFilledIcon,
     showInSidebar: true,
     showInMobileBottom: true,
+  },
+    {
+   id: "logout",
+  label: "Logout",
+  kind: "action",
+  icon: LogOut,
+  activeIcon: LogOut,
+  showInSidebar: true,
+  showInMobileBottom: false,
   },
 ];

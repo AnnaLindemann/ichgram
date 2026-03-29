@@ -28,18 +28,24 @@ const postLikesSlice = createSlice({
   reducers: {
     seedPostLikes(state, action: PayloadAction<PostLikeSeedEntry[]>) {
       for (const entry of action.payload) {
-        const hasLikedState = entry.postId in state.likedByPostId;
-        const hasLikesCountState = entry.postId in state.likesCountByPostId;
+        const alreadySeeded =
+          entry.postId in state.likedByPostId ||
+          entry.postId in state.likesCountByPostId;
 
-        if (!hasLikedState) {
+        if (!alreadySeeded) {
           state.likedByPostId[entry.postId] = entry.likedByMe;
-        }
-
-        if (!hasLikesCountState) {
           state.likesCountByPostId[entry.postId] = entry.likesCount;
         }
       }
     },
+
+    syncPostLikesFromServer(state, action: PayloadAction<PostLikeSeedEntry[]>) {
+      for (const entry of action.payload) {
+        state.likedByPostId[entry.postId] = entry.likedByMe;
+        state.likesCountByPostId[entry.postId] = entry.likesCount;
+      }
+    },
+
     setPostLikeState(state, action: PayloadAction<SetPostLikeStatePayload>) {
       const { postId, likedByMe, likesCount } = action.payload;
 
@@ -49,6 +55,7 @@ const postLikesSlice = createSlice({
   },
 });
 
-export const { seedPostLikes, setPostLikeState } = postLikesSlice.actions;
+export const { seedPostLikes, syncPostLikesFromServer, setPostLikeState } =
+  postLikesSlice.actions;
 
 export default postLikesSlice.reducer;

@@ -33,21 +33,7 @@ import {
   incrementPostCommentsCount,
   seedPostComments,
 } from "@/store/slices/postCommentsSlice";
-
-
-function formatPostDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
+import { formatRelativeTime } from "@/lib/formatRelativeTime";
 
 function getInitial(username: string) {
   return username.trim().charAt(0).toUpperCase() || "U";
@@ -662,7 +648,7 @@ export default function PostDetailsPage() {
                       </p>
 
                       <p className="mt-2 text-xs uppercase tracking-wide text-[#8e8e8e]">
-                        {formatPostDate(post.createdAt)}
+                        {formatRelativeTime(post.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -746,7 +732,7 @@ export default function PostDetailsPage() {
                                     </p>
 
                                     <p className="mt-1 text-xs uppercase tracking-wide text-[#8e8e8e]">
-                                      {formatPostDate(comment.createdAt)}
+                                      {formatRelativeTime(comment.createdAt)}
                                     </p>
 
                                     {isMyComment ? (
@@ -967,7 +953,7 @@ export default function PostDetailsPage() {
                   </p>
 
                   <p className="mt-2 text-xs uppercase tracking-wide text-[#8e8e8e]">
-                    {formatPostDate(post.createdAt)}
+                    {formatRelativeTime(post.createdAt)}
                   </p>
 
                   <p className="mt-3 text-sm leading-6 text-black">
