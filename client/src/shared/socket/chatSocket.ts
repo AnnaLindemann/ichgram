@@ -169,3 +169,17 @@ export function onNewNotification(
     socketInstance?.off("notification:new", handler);
   };
 }
+
+// Fires on initial connect and every reconnect.
+// Used to re-join rooms that are lost when the transport is reset.
+export function onSocketConnect(handler: () => void): () => void {
+  if (!socketInstance) {
+    return () => undefined;
+  }
+
+  socketInstance.on("connect", handler);
+
+  return () => {
+    socketInstance?.off("connect", handler);
+  };
+}

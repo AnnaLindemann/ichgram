@@ -21,12 +21,14 @@ import {
 } from "@/features/chat/api/chat";
 import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import {
+  connectChatSocket,
   joinConversationRoom,
   leaveConversationRoom,
   onMessageDeleted,
   onMessageRead,
   onMessageUpdated,
   onNewMessage,
+  onSocketConnect,
   onSocketReady,
 } from "@/shared/socket/chatSocket";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -483,6 +485,11 @@ export default function MessagesPage() {
       return;
     }
 
+    // AppLayout also calls connectChatSocket, but child effects run before
+    // parent effects in React. Calling it here ensures the socket instance
+    // exists before we register listeners on it.
+    connectChatSocket();
+
     const offReady = onSocketReady(() => {
       dispatch(setSocketReady(true));
     });
@@ -550,7 +557,14 @@ export default function MessagesPage() {
 
     joinConversationRoom(conversationId);
 
+    // Socket.io drops room membership on every reconnect (server-side rooms are
+    // per-connection). Re-emit chat:join whenever the transport re-establishes.
+    const offConnect = onSocketConnect(() => {
+      joinConversationRoom(conversationId);
+    });
+
     return () => {
+      offConnect();
       leaveConversationRoom(conversationId);
     };
   }, [activeConversationId]);
