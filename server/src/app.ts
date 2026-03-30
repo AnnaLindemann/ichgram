@@ -27,7 +27,7 @@ app.use(
   }),
 );
   app.use(morgan("dev"));
-  app.use(express.json({limit: "2mb"}));
+  app.use(express.json({limit: "4mb"}));
   app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "uploads"), {

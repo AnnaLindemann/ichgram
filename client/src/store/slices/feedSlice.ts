@@ -71,6 +71,20 @@ const feedSlice = createSlice({
     prependFeedPost(state, action: PayloadAction<FeedPost>) {
       state.posts = [action.payload, ...state.posts];
     },
+    // Patches author.username in all cached feed posts when the current user
+    // renames themselves. Without this, feed posts show the stale username
+    // until the page is hard-refreshed.
+    updateFeedAuthorUsername(
+      state,
+      action: PayloadAction<{ authorId: string; username: string }>,
+    ) {
+      const { authorId, username } = action.payload;
+      for (const post of state.posts) {
+        if (post.author.id === authorId) {
+          post.author.username = username;
+        }
+      }
+    },
   },
 });
 
@@ -82,6 +96,7 @@ export const {
   setFeedLoadingMore,
   appendFeedPosts,
   prependFeedPost,
+  updateFeedAuthorUsername,
 } = feedSlice.actions;
 
 export default feedSlice.reducer;

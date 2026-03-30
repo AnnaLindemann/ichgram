@@ -16,6 +16,7 @@ import { resolveMediaUrl } from "@/shared/lib/resolveMediaUrl";
 import type { EditProfileFormValues } from "@/features/profile/types/profile.types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMyProfile } from "@/store/slices/profileSlice";
+import { updateFeedAuthorUsername } from "@/store/slices/feedSlice";
 
 
 
@@ -155,6 +156,18 @@ form.setValue("avatarUrl", response.data.avatarUrl, {
       }
 
       updateStoredUsername(response.data.username);
+
+      // Patch author.username in feed posts so the feed reflects the new
+      // username without requiring a page reload.
+      if (payload.username !== undefined && currentProfile?.user.id) {
+        dispatch(
+          updateFeedAuthorUsername({
+            authorId: currentProfile.user.id,
+            username: response.data.username,
+          }),
+        );
+      }
+
       await dispatch(fetchMyProfile()).unwrap();
       navigate("/profile");
     } catch (error) {
