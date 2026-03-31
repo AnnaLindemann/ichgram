@@ -20,6 +20,7 @@ export async function forgotPasswordService(
   const user = await UserModel.findOne({
     $or: [
       { email: normalizedIdentifier },
+      { usernameNormalized: normalizedIdentifier },
       { username: normalizedIdentifier },
     ],
   }).exec();

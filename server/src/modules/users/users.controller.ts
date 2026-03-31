@@ -80,12 +80,24 @@ export async function updateMe(req: Request, res: Response): Promise<void> {
     throw new HttpError(404, "user not found");
   }
 
-  if (username !== undefined && username !== user.username) {
-    const existing = await UserModel.findOne({ username }).lean().exec();
-    if (existing) {
-      throw new HttpError(409, "Username already taken");
+  if (username !== undefined) {
+    const usernameNormalized = username.trim().toLowerCase();
+    const currentNormalized = user.usernameNormalized ?? user.username.toLowerCase();
+
+    if (usernameNormalized !== currentNormalized) {
+      const existing = await UserModel.findOne({
+        $or: [{ usernameNormalized }, { username: usernameNormalized }],
+        _id: { $ne: user._id },
+      })
+        .lean()
+        .exec();
+      if (existing) {
+        throw new HttpError(409, "Username already taken");
+      }
     }
+
     user.username = username;
+    user.usernameNormalized = usernameNormalized;
   }
 
   if (fullName !== undefined) {
@@ -133,7 +145,6 @@ export async function uploadAvatar(req: Request, res: Response): Promise<void> {
     throw new HttpError(400, "avatar file is required");
   }
 
-  // Convert uploaded buffer to Base64 data URL so it survives App Runner restarts.
   const avatarUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
 
   const user = await UserModel.findById(req.user.id).exec();

@@ -4,6 +4,7 @@ export type UserRole = "user";
 
 export type UserDb = {
   username: string;
+  usernameNormalized?: string;
   email: string;
   fullName: string;
   passwordHash: string;

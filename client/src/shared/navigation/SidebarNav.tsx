@@ -198,7 +198,7 @@ export function SidebarNav({
     alt="My profile"
     className={cn(
       "h-6 w-6 rounded-full object-cover",
-      isActive ? "ring-2 ring-black" : ""
+      isActive ? "ring-2" : ""
     )}
   />
 ) : (

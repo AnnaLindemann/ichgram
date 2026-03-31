@@ -20,9 +20,16 @@ function looksLikeEmail(value: string): boolean {
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, fullName, password } = registerSchema.parse(req.body);
 
+  const usernameNormalized = username.trim().toLowerCase();
+
   const [existingEmailUser, existingUsernameUser] = await Promise.all([
     UserModel.findOne({ email }).select("_id").lean().exec(),
-    UserModel.findOne({ username }).select("_id").lean().exec(),
+    UserModel.findOne({
+      $or: [{ usernameNormalized }, { username: usernameNormalized }],
+    })
+      .select("_id")
+      .lean()
+      .exec(),
   ]);
 
   const fieldErrors: Record<string, string> = {};
@@ -43,6 +50,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   const createdUser = await UserModel.create({
     username,
+    usernameNormalized,
     email,
     fullName,
     passwordHash,
@@ -71,7 +79,9 @@ export async function login(req: Request, res: Response): Promise<void> {
   const isEmail = looksLikeEmail(identifier);
 
   const existingUser = await UserModel.findOne(
-    isEmail ? { email: identifier } : { username: identifier }
+    isEmail
+      ? { email: identifier }
+      : { $or: [{ usernameNormalized: identifier }, { username: identifier }] }
   ).exec();
 
   if (!existingUser) {

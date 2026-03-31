@@ -11,7 +11,6 @@ export const updateMeSchema = z
         /^[a-zA-Z0-9_.]+$/,
         "username can only contain letters, numbers, dots, and underscores"
       )
-      .transform((value) => value.toLowerCase())
       .optional(),
 
     fullName: z
@@ -30,7 +29,6 @@ export const updateMeSchema = z
    avatarUrl: z
   .string()
   .trim()
-  // No length limit: value can be a Base64 data URL (very long) or a short path/URL.
   .refine(
     (value) =>
       value === "" ||

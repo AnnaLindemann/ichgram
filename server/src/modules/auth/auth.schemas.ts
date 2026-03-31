@@ -8,8 +8,7 @@ const usernameSchema = z
   .regex(
     /^[a-zA-Z0-9_.]+$/,
     "Username may contain only letters, numbers, dots, and underscores"
-  )
-  .transform((value) => value.toLowerCase());
+  );
 
 const emailSchema = z
   .string()

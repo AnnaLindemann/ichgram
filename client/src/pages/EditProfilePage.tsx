@@ -125,7 +125,7 @@ form.setValue("avatarUrl", response.data.avatarUrl, {
       setSubmitError(null);
       setIsSaving(true);
 
-      const trimmedUsername = values.username.trim().toLowerCase();
+      const trimmedUsername = values.username.trim();
 
       if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
         setSubmitError("Username must be between 3 and 30 characters");
